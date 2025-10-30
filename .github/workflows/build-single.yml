@@ -1,0 +1,257 @@
+name: Build Single Profile
+
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: 'Device to build'
+        required: true
+        type: choice
+        options:
+          - hiker-rt5350
+      profile:
+        description: 'Profile to build'
+        required: true
+        type: choice
+        options:
+          - minimal
+          - p910nd
+          - wifi-client
+          - full-wifi
+      openwrt_version:
+        description: 'OpenWrt version'
+        required: true
+        type: choice
+        default: 'main'
+        options:
+          - main           # SNAPSHOT (latest)
+          - openwrt-23.05  # 23.05 stable
+          - openwrt-24.10  # 24.10 stable (if exists)
+      create_release:
+        description: 'Create release after build'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  OPENWRT_REPO: openwrt/openwrt
+  UPLOAD_FIRMWARE: true
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    name: Build ${{ inputs.device }} - ${{ inputs.profile }} (OpenWrt ${{ inputs.openwrt_version }})
+    
+    steps:
+      - name: Checkout custom-devices feed
+        uses: actions/checkout@v4
+        with:
+          path: custom-devices
+
+      - name: Initialize environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential clang flex bison g++ gawk \
+            gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev \
+            python3-setuptools rsync swig unzip zlib1g-dev file wget \
+            python3 python3-minimal libelf-dev ca-certificates curl \
+            qemu-utils squashfs-tools
+          sudo timedatectl set-timezone "$TZ"
+
+      - name: Clone OpenWrt (${{ inputs.openwrt_version }})
+        run: |
+          git clone --depth 1 https://github.com/${{ env.OPENWRT_REPO }}.git -b ${{ inputs.openwrt_version }} openwrt
+          cd openwrt
+          echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
+          echo "DEVICE_PATH=$PWD/../custom-devices/devices/${{ inputs.device }}" >> $GITHUB_ENV
+
+      - name: Get OpenWrt version info
+        working-directory: ./openwrt
+        run: |
+          # Get version from include/version.mk
+          if [ -f include/version.mk ]; then
+            OPENWRT_VER=$(grep -E '^VERSION_NUMBER:=' include/version.mk | cut -d'=' -f2 | tr -d ' ' || echo "SNAPSHOT")
+          else
+            OPENWRT_VER="SNAPSHOT"
+          fi
+          
+          # Fallback to branch name if version not found
+          if [ "$OPENWRT_VER" = "SNAPSHOT" ] || [ -z "$OPENWRT_VER" ]; then
+            BRANCH_NAME="${{ inputs.openwrt_version }}"
+            if [ "$BRANCH_NAME" = "main" ]; then
+              OPENWRT_VER="SNAPSHOT"
+            else
+              OPENWRT_VER=$(echo $BRANCH_NAME | sed 's/openwrt-//')
+            fi
+          fi
+          
+          echo "OPENWRT_VERSION=$OPENWRT_VER" >> $GITHUB_ENV
+          echo "OpenWrt version: $OPENWRT_VER"
+
+      - name: Update & Install feeds
+        working-directory: ./openwrt
+        run: |
+          # Add custom-devices feed
+          echo "src-link custom $GITHUB_WORKSPACE/custom-devices" >> feeds.conf.default
+          
+          # Update feeds
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Copy device files
+        working-directory: ./openwrt
+        run: |
+          # Copy DTS
+          if [ -d "$DEVICE_PATH/target/linux/ramips/dts" ]; then
+            cp -r $DEVICE_PATH/target/linux/ramips/dts/* target/linux/ramips/dts/
+            echo "✓ DTS files copied"
+          fi
+          
+          # Add device definition to rt305x.mk
+          if [ -f "$DEVICE_PATH/target/linux/ramips/image/hiker.mk" ]; then
+            cat $DEVICE_PATH/target/linux/ramips/image/hiker.mk >> target/linux/ramips/image/rt305x.mk
+            echo "✓ Device definition added"
+          fi
+
+      - name: Load configuration
+        working-directory: ./openwrt
+        run: |
+          # Copy defconfig
+          cp $DEVICE_PATH/profiles/${{ inputs.profile }}/defconfig .config
+          echo "✓ Config loaded: ${{ inputs.profile }}"
+          
+          # Copy files overlay
+          if [ -d "$DEVICE_PATH/profiles/${{ inputs.profile }}/files" ]; then
+            cp -r $DEVICE_PATH/profiles/${{ inputs.profile }}/files .
+            echo "✓ Files overlay copied"
+          fi
+          
+          # Apply config
+          make defconfig
+          echo "✓ Config applied"
+
+      - name: Download packages
+        working-directory: ./openwrt
+        run: |
+          echo "Downloading packages..."
+          make download -j$(nproc) || make download -j1 V=s
+          find dl -size -1024c -exec ls -l {} \;
+          find dl -size -1024c -exec rm -f {} \;
+
+      - name: Compile firmware
+        working-directory: ./openwrt
+        run: |
+          echo "=========================================="
+          echo "  Compiling OpenWrt Firmware"
+          echo "=========================================="
+          echo "Device: ${{ inputs.device }}"
+          echo "Profile: ${{ inputs.profile }}"
+          echo "OpenWrt: ${{ env.OPENWRT_VERSION }} (${{ inputs.openwrt_version }})"
+          echo "Threads: $(nproc)"
+          echo "=========================================="
+          echo ""
+          
+          make -j$(nproc) || make -j1 V=s
+          echo "status=success" >> $GITHUB_OUTPUT
+        id: compile
+
+      - name: Check disk space
+        if: (!cancelled())
+        run: df -hT
+
+      - name: Organize files
+        if: steps.compile.outputs.status == 'success' && !cancelled()
+        run: |
+          cd openwrt/bin/targets/*/*
+          rm -rf packages
+          
+          # Get build date
+          BUILD_DATE=$(date +"%Y%m%d")
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+          
+          # Rename firmware
+          FIRMWARE_NAME="${{ inputs.device }}-${{ env.OPENWRT_VERSION }}-${{ inputs.profile }}"
+          echo "FIRMWARE_NAME=$FIRMWARE_NAME" >> $GITHUB_ENV
+          
+          # Find and rename sysupgrade image
+          SYSUPGRADE=$(ls *sysupgrade.bin 2>/dev/null | head -1)
+          if [ -n "$SYSUPGRADE" ]; then
+            cp "$SYSUPGRADE" "${FIRMWARE_NAME}.bin"
+            sha256sum "${FIRMWARE_NAME}.bin" | awk '{print $1 "  " $2}' > "${FIRMWARE_NAME}.bin.sha256"
+            
+            SIZE=$(ls -lh "${FIRMWARE_NAME}.bin" | awk '{print $5}')
+            echo "FIRMWARE_SIZE=$SIZE" >> $GITHUB_ENV
+            
+            echo "✓ Firmware: ${FIRMWARE_NAME}.bin ($SIZE)"
+          fi
+          
+          echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
+
+      - name: Generate build info
+        if: steps.compile.outputs.status == 'success'
+        run: |
+          cd ${{ env.FIRMWARE_PATH }}
+          
+          cat > build-info.txt << EOF
+          【编译信息】
+          
+          设备: ${{ inputs.device }}
+          配置: ${{ inputs.profile }}
+          OpenWrt 版本: ${{ env.OPENWRT_VERSION }} (分支: ${{ inputs.openwrt_version }})
+          编译日期: ${{ env.BUILD_DATE }}
+          固件大小: ${{ env.FIRMWARE_SIZE }}
+          
+          【SHA256】
+          $(cat ${{ env.FIRMWARE_NAME }}.bin.sha256)
+          
+          【刷机方法】
+          scp ${{ env.FIRMWARE_NAME }}.bin root@192.168.1.1:/tmp/sysupgrade.bin
+          ssh root@192.168.1.1 "sysupgrade -v /tmp/sysupgrade.bin"
+          EOF
+          
+          cat build-info.txt
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        if: steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true'
+        with:
+          name: ${{ env.FIRMWARE_NAME }}
+          path: |
+            ${{ env.FIRMWARE_PATH }}/${{ env.FIRMWARE_NAME }}.bin
+            ${{ env.FIRMWARE_PATH }}/${{ env.FIRMWARE_NAME }}.bin.sha256
+            ${{ env.FIRMWARE_PATH }}/build-info.txt
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        if: steps.compile.outputs.status == 'success' && inputs.create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ inputs.device }}-${{ inputs.profile }}-${{ env.OPENWRT_VERSION }}-${{ env.BUILD_DATE }}
+          name: ${{ inputs.device }} ${{ inputs.profile }} - OpenWrt ${{ env.OPENWRT_VERSION }}
+          body_path: ${{ env.FIRMWARE_PATH }}/build-info.txt
+          draft: false
+          prerelease: false
+          files: |
+            ${{ env.FIRMWARE_PATH }}/${{ env.FIRMWARE_NAME }}.bin
+            ${{ env.FIRMWARE_PATH }}/${{ env.FIRMWARE_NAME }}.bin.sha256
+
+      - name: Build summary
+        if: always()
+        run: |
+          echo "## 编译结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **设备**: ${{ inputs.device }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **配置**: ${{ inputs.profile }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **OpenWrt**: ${{ env.OPENWRT_VERSION }} (\`${{ inputs.openwrt_version }}\`)" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.compile.outputs.status }}" = "success" ]; then
+            echo "- **状态**: ✅ 编译成功" >> $GITHUB_STEP_SUMMARY
+            echo "- **固件**: ${{ env.FIRMWARE_NAME }}.bin" >> $GITHUB_STEP_SUMMARY
+            echo "- **大小**: ${{ env.FIRMWARE_SIZE }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **状态**: ❌ 编译失败" >> $GITHUB_STEP_SUMMARY
+          fi
+
