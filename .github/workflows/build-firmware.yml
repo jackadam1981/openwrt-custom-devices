@@ -83,24 +83,25 @@ jobs:
       - name: Update & Install feeds
         working-directory: ./openwrt
         run: |
-          # Add custom-devices feed
-          echo "src-link custom $GITHUB_WORKSPACE/custom-devices" >> feeds.conf.default
-          
-          # Update feeds
+          # Update default feeds only (don't add custom-devices as feed)
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
       - name: Copy device files
         working-directory: ./openwrt
         run: |
+          echo "Copying Hiker RT5350 device files..."
+          
           # Copy DTS
           if [ -d "$DEVICE_PATH/target/linux/ramips/dts" ]; then
             cp -r $DEVICE_PATH/target/linux/ramips/dts/* target/linux/ramips/dts/
+            echo "✓ DTS files copied"
           fi
           
           # Add device definition to rt305x.mk
           if [ -f "$DEVICE_PATH/target/linux/ramips/image/hiker.mk" ]; then
             cat $DEVICE_PATH/target/linux/ramips/image/hiker.mk >> target/linux/ramips/image/rt305x.mk
+            echo "✓ Device definition added"
           fi
 
       - name: Load configuration

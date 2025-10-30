@@ -93,10 +93,7 @@ jobs:
       - name: Update & Install feeds
         working-directory: ./openwrt
         run: |
-          # Add custom-devices feed
-          echo "src-link custom $GITHUB_WORKSPACE/custom-devices" >> feeds.conf.default
-          
-          # Update feeds
+          # Update default feeds (without custom-devices as feed)
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
