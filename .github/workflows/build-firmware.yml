@@ -111,12 +111,9 @@ jobs:
           cp $FEED_PATH/configs/hiker-rt5350/${{ matrix.profile.id }}.config .config
           echo "✓ Config loaded: ${{ matrix.profile.id }}"
           
-          # Copy files overlay from feed
-          if [ -d "$FEED_PATH/files/hiker-rt5350/${{ matrix.profile.id }}" ]; then
-            rm -rf files
-            cp -r $FEED_PATH/files/hiker-rt5350/${{ matrix.profile.id }} files
-            echo "✓ Files overlay copied"
-          fi
+          # No files overlay - use OpenWrt defaults
+          rm -rf files
+          echo "✓ Using OpenWrt default files (no custom overlay)"
           
           # Apply config
           make defconfig

@@ -121,12 +121,9 @@ jobs:
           cp $FEED_PATH/configs/${{ inputs.device }}/${{ inputs.profile }}.config .config
           echo "✓ Config loaded: ${{ inputs.profile }}"
           
-          # Copy files overlay from feed
-          if [ -d "$FEED_PATH/files/${{ inputs.device }}/${{ inputs.profile }}" ]; then
-            rm -rf files
-            cp -r $FEED_PATH/files/${{ inputs.device }}/${{ inputs.profile }} files
-            echo "✓ Files overlay copied"
-          fi
+          # No files overlay - use OpenWrt defaults
+          rm -rf files
+          echo "✓ Using OpenWrt default files (no custom overlay)"
           
           # Apply config
           make defconfig
