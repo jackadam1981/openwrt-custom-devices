@@ -65,7 +65,7 @@ jobs:
           git clone --depth 1 https://github.com/${{ env.OPENWRT_REPO }}.git -b ${{ inputs.openwrt_version }} openwrt
           cd openwrt
           echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-          echo "DEVICE_PATH=$PWD/../custom-devices/devices/${{ inputs.device }}" >> $GITHUB_ENV
+          echo "FEED_PATH=$GITHUB_WORKSPACE/custom-devices" >> $GITHUB_ENV
 
       - name: Get OpenWrt version info
         working-directory: ./openwrt
@@ -93,35 +93,37 @@ jobs:
       - name: Update & Install feeds
         working-directory: ./openwrt
         run: |
-          # Update default feeds (without custom-devices as feed)
+          # Add custom-devices feed (now with standard structure)
+          echo "src-link custom $FEED_PATH" >> feeds.conf.default
+          
+          # Update feeds
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: Copy device files
+      - name: Verify feed installation
         working-directory: ./openwrt
         run: |
-          # Copy DTS
-          if [ -d "$DEVICE_PATH/target/linux/ramips/dts" ]; then
-            cp -r $DEVICE_PATH/target/linux/ramips/dts/* target/linux/ramips/dts/
-            echo "✓ DTS files copied"
+          echo "Verifying feed installation..."
+          
+          # Check if device files are installed
+          if [ -f target/linux/ramips/dts/rt5350_hiker_hiker.dts ]; then
+            echo "✓ DTS file installed from feed"
           fi
           
-          # Add device definition to rt305x.mk
-          if [ -f "$DEVICE_PATH/target/linux/ramips/image/hiker.mk" ]; then
-            cat $DEVICE_PATH/target/linux/ramips/image/hiker.mk >> target/linux/ramips/image/rt305x.mk
-            echo "✓ Device definition added"
+          if grep -q "hiker_hiker" target/linux/ramips/image/rt305x.mk; then
+            echo "✓ Device definition installed from feed"
           fi
 
       - name: Load configuration
         working-directory: ./openwrt
         run: |
-          # Copy defconfig
-          cp $DEVICE_PATH/profiles/${{ inputs.profile }}/defconfig .config
+          # Copy defconfig from feed
+          cp $FEED_PATH/configs/${{ inputs.device }}/${{ inputs.profile }}.config .config
           echo "✓ Config loaded: ${{ inputs.profile }}"
           
-          # Copy files overlay
-          if [ -d "$DEVICE_PATH/profiles/${{ inputs.profile }}/files" ]; then
-            cp -r $DEVICE_PATH/profiles/${{ inputs.profile }}/files .
+          # Copy files overlay from feed
+          if [ -d "$FEED_PATH/files/${{ inputs.device }}/${{ inputs.profile }}" ]; then
+            cp -r $FEED_PATH/files/${{ inputs.device }}/${{ inputs.profile }} files
             echo "✓ Files overlay copied"
           fi
           

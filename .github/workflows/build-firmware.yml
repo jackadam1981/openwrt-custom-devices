@@ -63,8 +63,7 @@ jobs:
           git clone --depth 1 https://github.com/${{ env.OPENWRT_REPO }}.git -b ${{ matrix.openwrt_version.branch }} openwrt
           cd openwrt
           echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-          echo "DEVICE_PATH=$PWD/../custom-devices/devices/hiker-rt5350" >> $GITHUB_ENV
-          echo "OPENWRT_BRANCH=${{ matrix.openwrt_version.branch }}" >> $GITHUB_ENV
+          echo "FEED_PATH=$GITHUB_WORKSPACE/custom-devices" >> $GITHUB_ENV
 
       - name: Get OpenWrt version info
         working-directory: ./openwrt
@@ -83,37 +82,38 @@ jobs:
       - name: Update & Install feeds
         working-directory: ./openwrt
         run: |
-          # Update default feeds only (don't add custom-devices as feed)
+          # Add custom-devices as feed (now with standard structure)
+          echo "src-link custom $FEED_PATH" >> feeds.conf.default
+          
+          # Update feeds
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
       - name: Copy device files
         working-directory: ./openwrt
         run: |
-          echo "Copying Hiker RT5350 device files..."
+          echo "Installing Hiker RT5350 from feed..."
           
-          # Copy DTS
-          if [ -d "$DEVICE_PATH/target/linux/ramips/dts" ]; then
-            cp -r $DEVICE_PATH/target/linux/ramips/dts/* target/linux/ramips/dts/
-            echo "✓ DTS files copied"
+          # Device files are now installed via feed system
+          # Just verify they exist
+          if [ -f target/linux/ramips/dts/rt5350_hiker_hiker.dts ]; then
+            echo "✓ DTS file installed from feed"
           fi
           
-          # Add device definition to rt305x.mk
-          if [ -f "$DEVICE_PATH/target/linux/ramips/image/hiker.mk" ]; then
-            cat $DEVICE_PATH/target/linux/ramips/image/hiker.mk >> target/linux/ramips/image/rt305x.mk
-            echo "✓ Device definition added"
+          if grep -q "hiker_hiker" target/linux/ramips/image/rt305x.mk; then
+            echo "✓ Device definition installed from feed"
           fi
 
       - name: Load configuration
         working-directory: ./openwrt
         run: |
-          # Copy defconfig
-          cp $DEVICE_PATH/profiles/${{ matrix.profile.id }}/defconfig .config
-          echo "✓ Config: ${{ matrix.profile.id }}"
+          # Copy defconfig from feed
+          cp $FEED_PATH/configs/hiker-rt5350/${{ matrix.profile.id }}.config .config
+          echo "✓ Config loaded: ${{ matrix.profile.id }}"
           
-          # Copy files overlay
-          if [ -d "$DEVICE_PATH/profiles/${{ matrix.profile.id }}/files" ]; then
-            cp -r $DEVICE_PATH/profiles/${{ matrix.profile.id }}/files .
+          # Copy files overlay from feed
+          if [ -d "$FEED_PATH/files/hiker-rt5350/${{ matrix.profile.id }}" ]; then
+            cp -r $FEED_PATH/files/hiker-rt5350/${{ matrix.profile.id }} files
             echo "✓ Files overlay copied"
           fi
           
