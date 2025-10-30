@@ -1,0 +1,10 @@
+# Hiker RT5350 固件版本信息
+VERSION="v0.4"
+VERSION_NAME="完整WiFi"
+BUILD_DATE="$(date +%Y-%m-%d)"
+OPENWRT_VERSION="25.300"
+FEATURES="LuCI 中文界面, SSH, P910ND 打印服务器, WiFi 客户端, WiFi AP"
+PACKAGES="luci-light, p910nd, luci-app-p910nd, wpad-basic-mbedtls, hostapd, kmod-rt2800-soc"
+DESCRIPTION="打印服务器 + 完整 WiFi 功能 ⚠️性能问题（CPU 100% 占用）"
+WARNING="WiFi 驱动占用 CPU 过高，严重卡顿，不推荐使用"
+
