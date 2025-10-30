@@ -69,20 +69,12 @@ jobs:
       - name: Get OpenWrt version info
         working-directory: ./openwrt
         run: |
-          # Get version from include/version.mk
-          if [ -f include/version.mk ]; then
-            OPENWRT_VER=$(grep -E '^VERSION_NUMBER:=' include/version.mk | cut -d'=' -f2 | tr -d ' ' || echo "${{ matrix.openwrt_version.name }}")
+          # Simply use the matrix name as version
+          if [ "${{ matrix.openwrt_version.branch }}" = "main" ]; then
+            OPENWRT_VER="SNAPSHOT"
           else
-            OPENWRT_VER="${{ matrix.openwrt_version.name }}"
-          fi
-          
-          # Fallback
-          if [ -z "$OPENWRT_VER" ] || [ "$OPENWRT_VER" = "SNAPSHOT" ]; then
-            if [ "${{ matrix.openwrt_version.branch }}" = "main" ]; then
-              OPENWRT_VER="SNAPSHOT"
-            else
-              OPENWRT_VER=$(echo ${{ matrix.openwrt_version.branch }} | sed 's/openwrt-//')
-            fi
+            # Extract version from branch name (e.g., openwrt-23.05 -> 23.05)
+            OPENWRT_VER=$(echo "${{ matrix.openwrt_version.branch }}" | sed 's/^openwrt-//')
           fi
           
           echo "OPENWRT_VERSION=$OPENWRT_VER" >> $GITHUB_ENV
