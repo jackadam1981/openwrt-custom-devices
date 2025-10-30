@@ -14,7 +14,6 @@ on:
 
 env:
   OPENWRT_REPO: openwrt/openwrt
-  OPENWRT_BRANCH: main
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
@@ -25,22 +24,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Hiker RT5350 - 4 profiles
-          - device: hiker-rt5350
-            profile: minimal
-            name: "Hiker RT5350 - Minimal"
-          - device: hiker-rt5350
-            profile: p910nd
-            name: "Hiker RT5350 - P910ND"
-          - device: hiker-rt5350
-            profile: wifi-client
-            name: "Hiker RT5350 - WiFi Client"
-          - device: hiker-rt5350
-            profile: full-wifi
-            name: "Hiker RT5350 - Full WiFi"
+        openwrt_version:
+          - branch: main
+            name: SNAPSHOT
+          - branch: openwrt-23.05
+            name: "23.05"
+        profile:
+          - id: minimal
+            name: Minimal
+          - id: p910nd
+            name: P910ND
+          - id: wifi-client
+            name: WiFi-Client
+          - id: full-wifi
+            name: Full-WiFi
 
-    name: ${{ matrix.name }}
+    name: Hiker RT5350 - ${{ matrix.profile.name }} (OpenWrt ${{ matrix.openwrt_version.name }})
     
     steps:
       - name: Checkout custom-devices feed
@@ -59,12 +58,35 @@ jobs:
             qemu-utils squashfs-tools
           sudo timedatectl set-timezone "$TZ"
 
-      - name: Clone OpenWrt
+      - name: Clone OpenWrt (${{ matrix.openwrt_version.name }})
         run: |
-          git clone --depth 1 https://github.com/${{ env.OPENWRT_REPO }}.git -b ${{ env.OPENWRT_BRANCH }} openwrt
+          git clone --depth 1 https://github.com/${{ env.OPENWRT_REPO }}.git -b ${{ matrix.openwrt_version.branch }} openwrt
           cd openwrt
           echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-          echo "DEVICE_PATH=$PWD/../custom-devices/devices/${{ matrix.device }}" >> $GITHUB_ENV
+          echo "DEVICE_PATH=$PWD/../custom-devices/devices/hiker-rt5350" >> $GITHUB_ENV
+          echo "OPENWRT_BRANCH=${{ matrix.openwrt_version.branch }}" >> $GITHUB_ENV
+
+      - name: Get OpenWrt version info
+        working-directory: ./openwrt
+        run: |
+          # Get version from include/version.mk
+          if [ -f include/version.mk ]; then
+            OPENWRT_VER=$(grep -E '^VERSION_NUMBER:=' include/version.mk | cut -d'=' -f2 | tr -d ' ' || echo "${{ matrix.openwrt_version.name }}")
+          else
+            OPENWRT_VER="${{ matrix.openwrt_version.name }}"
+          fi
+          
+          # Fallback
+          if [ -z "$OPENWRT_VER" ] || [ "$OPENWRT_VER" = "SNAPSHOT" ]; then
+            if [ "${{ matrix.openwrt_version.branch }}" = "main" ]; then
+              OPENWRT_VER="SNAPSHOT"
+            else
+              OPENWRT_VER=$(echo ${{ matrix.openwrt_version.branch }} | sed 's/openwrt-//')
+            fi
+          fi
+          
+          echo "OPENWRT_VERSION=$OPENWRT_VER" >> $GITHUB_ENV
+          echo "OpenWrt version: $OPENWRT_VER"
 
       - name: Update & Install feeds
         working-directory: ./openwrt
@@ -93,11 +115,13 @@ jobs:
         working-directory: ./openwrt
         run: |
           # Copy defconfig
-          cp $DEVICE_PATH/profiles/${{ matrix.profile }}/defconfig .config
+          cp $DEVICE_PATH/profiles/${{ matrix.profile.id }}/defconfig .config
+          echo "✓ Config: ${{ matrix.profile.id }}"
           
           # Copy files overlay
-          if [ -d "$DEVICE_PATH/profiles/${{ matrix.profile }}/files" ]; then
-            cp -r $DEVICE_PATH/profiles/${{ matrix.profile }}/files .
+          if [ -d "$DEVICE_PATH/profiles/${{ matrix.profile.id }}/files" ]; then
+            cp -r $DEVICE_PATH/profiles/${{ matrix.profile.id }}/files .
+            echo "✓ Files overlay copied"
           fi
           
           # Apply config
@@ -128,16 +152,12 @@ jobs:
           cd openwrt/bin/targets/*/*
           rm -rf packages
           
-          # Get OpenWrt version
-          OPENWRT_VER=$(cat ../../../include/version.mk | grep RELEASE | head -1 | cut -d'=' -f2 | tr -d ' "')
-          echo "OPENWRT_VERSION=$OPENWRT_VER" >> $GITHUB_ENV
-          
           # Get build date
           BUILD_DATE=$(date +"%Y%m%d")
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
           
           # Rename firmware
-          FIRMWARE_NAME="${{ matrix.device }}-${OPENWRT_VER}-${{ matrix.profile }}"
+          FIRMWARE_NAME="hiker-rt5350-${{ env.OPENWRT_VERSION }}-${{ matrix.profile.id }}"
           echo "FIRMWARE_NAME=$FIRMWARE_NAME" >> $GITHUB_ENV
           
           # Find and rename sysupgrade image
@@ -156,43 +176,4 @@ jobs:
           name: ${{ env.FIRMWARE_NAME }}
           path: ${{ env.FIRMWARE_PATH }}/${{ env.FIRMWARE_NAME }}.bin*
 
-      - name: Generate release info
-        if: steps.compile.outputs.status == 'success' && github.event.inputs.release == 'true'
-        run: |
-          cd ${{ env.FIRMWARE_PATH }}
-          
-          cat > release-${{ matrix.device }}-${{ matrix.profile }}.txt << EOF
-          ## ${{ matrix.name }}
-          
-          **固件信息**
-          - 设备: ${{ matrix.device }}
-          - 配置: ${{ matrix.profile }}
-          - OpenWrt 版本: ${{ env.OPENWRT_VERSION }}
-          - 编译日期: ${{ env.BUILD_DATE }}
-          - 固件大小: $(ls -lh ${{ env.FIRMWARE_NAME }}.bin | awk '{print $5}')
-          
-          **SHA256**
-          \`\`\`
-          $(cat ${{ env.FIRMWARE_NAME }}.bin.sha256)
-          \`\`\`
-          
-          **刷机方法**
-          \`\`\`bash
-          scp ${{ env.FIRMWARE_NAME }}.bin root@192.168.1.1:/tmp/sysupgrade.bin
-          ssh root@192.168.1.1 "sysupgrade -v /tmp/sysupgrade.bin"
-          \`\`\`
-          EOF
-
-      - name: Upload to release
-        uses: softprops/action-gh-release@v1
-        if: steps.compile.outputs.status == 'success' && github.event.inputs.release == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ env.OPENWRT_VERSION }}-${{ env.BUILD_DATE }}
-          name: Release ${{ env.OPENWRT_VERSION }} (${{ env.BUILD_DATE }})
-          body_path: ${{ env.FIRMWARE_PATH }}/release-${{ matrix.device }}-${{ matrix.profile }}.txt
-          files: |
-            ${{ env.FIRMWARE_PATH }}/${{ env.FIRMWARE_NAME }}.bin
-            ${{ env.FIRMWARE_PATH }}/${{ env.FIRMWARE_NAME }}.bin.sha256
 
