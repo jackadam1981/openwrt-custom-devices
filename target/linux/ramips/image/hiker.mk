@@ -12,7 +12,7 @@ endef
 # Profile 1: Minimal (基础版)
 define Device/hiker_hiker-minimal
   $(call Device/hiker_hiker-common)
-  DEVICE_MODEL := Hiker-Base
+  DEVICE_MODEL := Hiker Minimal
   DEVICE_PACKAGES := luci-light luci-theme-bootstrap \
     luci-i18n-base-zh-cn
 endef
@@ -21,7 +21,7 @@ TARGET_DEVICES += hiker_hiker-minimal
 # Profile 2: P910ND (打印服务器) ⭐ 推荐
 define Device/hiker_hiker-p910nd
   $(call Device/hiker_hiker-common)
-  DEVICE_MODEL := Hiker-Print
+  DEVICE_MODEL := Hiker Print
   DEVICE_PACKAGES := luci-light luci-theme-bootstrap \
     luci-i18n-base-zh-cn \
     p910nd luci-app-p910nd luci-i18n-p910nd-zh-cn \
@@ -32,7 +32,7 @@ TARGET_DEVICES += hiker_hiker-p910nd
 # Profile 3: WiFi Client (打印+WiFi客户端)
 define Device/hiker_hiker-wifi-client
   $(call Device/hiker_hiker-common)
-  DEVICE_MODEL := Hiker-WiFiClient
+  DEVICE_MODEL := Hiker WifiClient
   DEVICE_PACKAGES := luci-light luci-theme-bootstrap \
     luci-i18n-base-zh-cn \
     p910nd luci-app-p910nd luci-i18n-p910nd-zh-cn \
@@ -46,7 +46,7 @@ TARGET_DEVICES += hiker_hiker-wifi-client
 # Profile 4: Full WiFi (打印+完整WiFi)
 define Device/hiker_hiker-full-wifi
   $(call Device/hiker_hiker-common)
-  DEVICE_MODEL := Hiker-WiFiFull
+  DEVICE_MODEL := Hiker WifiFull
   DEVICE_PACKAGES := luci-light luci-theme-bootstrap \
     luci-i18n-base-zh-cn \
     p910nd luci-app-p910nd luci-i18n-p910nd-zh-cn \
