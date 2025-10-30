@@ -123,6 +123,7 @@ jobs:
           
           # Copy files overlay from feed
           if [ -d "$FEED_PATH/files/${{ inputs.device }}/${{ inputs.profile }}" ]; then
+            rm -rf files
             cp -r $FEED_PATH/files/${{ inputs.device }}/${{ inputs.profile }} files
             echo "✓ Files overlay copied"
           fi

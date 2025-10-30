@@ -113,6 +113,7 @@ jobs:
           
           # Copy files overlay from feed
           if [ -d "$FEED_PATH/files/hiker-rt5350/${{ matrix.profile.id }}" ]; then
+            rm -rf files
             cp -r $FEED_PATH/files/hiker-rt5350/${{ matrix.profile.id }} files
             echo "✓ Files overlay copied"
           fi
