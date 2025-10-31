@@ -8,6 +8,7 @@ on:
       - 'devices/**'
       - 'hiker-target/**'
       - 'target/**'
+      - 'files/**'
       - '.github/workflows/build-firmware.yml'
   pull_request:
     branches:
