@@ -51,8 +51,12 @@ echo "  设备型号: $DEVICE_MODEL"
 echo "  OpenWrt: $OPENWRT_VER"
 echo ""
 
+# 创建输出目录
+OUTPUT_DIR="performance-reports"
+mkdir -p "$OUTPUT_DIR"
+
 # 生成输出文件名
-OUTPUT_FILE="perf-$DEVICE_MODEL-$OPENWRT_VER-$BUILD_DATE.txt"
+OUTPUT_FILE="$OUTPUT_DIR/perf-$DEVICE_MODEL-$OPENWRT_VER-$BUILD_DATE.txt"
 
 # 步骤2: 收集完整性能数据
 echo "=> 收集性能数据..."
