@@ -2,7 +2,7 @@
 
 ## 版本概览
 
-Hiker 固件基于 OpenWrt SNAPSHOT (内核 6.12.55)，针对 RT5350 (360MHz, 32MB RAM) 优化。
+Hiker 固件基于 OpenWrt 25.03，针对 RT5350 (360MHz, 32MB RAM) 优化。
 
 提供 **4 个版本**，采用增量添加策略：
 
@@ -80,6 +80,13 @@ v0.4 (完整WiFi) ⚠️性能差
 - **内存占用**: ~14 MB
 - **软件包数**: 15 个
 - **启动时间**: 快速
+
+### 性能测试结果
+```
+CPU:   0% usr   1% sys   0% nic  98% idle
+Load average: 0.71 0.42 0.17  (OpenWrt 25.03)
+Mem: 14400K used, 17800K free
+```
 
 ### 适用场景
 - 基础路由/网关
@@ -343,5 +350,5 @@ cp hiker-v0.1.config hiker.config
 
 ---
 
-最后更新：2025-10-28
+最后更新：2025-10-31
 
