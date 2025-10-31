@@ -1,5 +1,5 @@
 # Hiker RT5350 固件版本信息
-VERSION="v0.2"
+VERSION="print_v0.1"
 VERSION_NAME="打印服务器"
 BUILD_DATE="$(date +%Y-%m-%d)"
 OPENWRT_VERSION="23.05-SNAPSHOT"
