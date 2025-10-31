@@ -221,9 +221,10 @@ configs/hiker-rt5350/minimal.config
 
 ### 性能测试结果
 ```
-CPU:   0% usr   1% sys   0% nic  98% idle
-Load average: 0.74
-Mem: 22440K used, 3940K free, 5512K cached
+CPU:   8% usr   8% sys   0% nic  83% idle
+Load average: 1.06, 0.64, 0.26  (OpenWrt 23.05-SNAPSHOT)
+Mem: 13.6MB used, 9.8MB available (27MB total)
+启动: 约 2 分钟后稳定
 ```
 
 ### 适用场景
