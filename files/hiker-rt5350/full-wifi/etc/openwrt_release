@@ -1,0 +1,8 @@
+DISTRIB_ID='OpenWrt'
+DISTRIB_RELEASE='23.05'
+DISTRIB_REVISION='Hiker WiFiFull v0.1'
+DISTRIB_CODENAME='reboot'
+DISTRIB_TARGET='ramips/rt305x'
+DISTRIB_ARCH='mipsel_24kc'
+DISTRIB_DESCRIPTION='OpenWrt 23.05 r0 - Hiker WiFiFull v0.1'
+DISTRIB_TAINTS='no-all busybox'
