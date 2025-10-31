@@ -6,13 +6,13 @@ define Device/hiker_hiker-common
   SOC := rt5350
   IMAGE_SIZE := 7872k
   DEVICE_VENDOR := Hiker
-  SUPPORTED_DEVICES := HIKER
 endef
 
 # Profile 1: Minimal (基础版)
 define Device/hiker_hiker-minimal
   $(call Device/hiker_hiker-common)
   DEVICE_MODEL := Hiker Minimal
+  SUPPORTED_DEVICES := hiker,hiker-minimal HIKER
   DEVICE_PACKAGES := luci-light luci-theme-bootstrap \
     luci-i18n-base-zh-cn
 endef
@@ -22,6 +22,7 @@ TARGET_DEVICES += hiker_hiker-minimal
 define Device/hiker_hiker-p910nd
   $(call Device/hiker_hiker-common)
   DEVICE_MODEL := Hiker Print
+  SUPPORTED_DEVICES := hiker,hiker-print HIKER
   DEVICE_PACKAGES := luci-light luci-theme-bootstrap \
     luci-i18n-base-zh-cn \
     p910nd luci-app-p910nd luci-i18n-p910nd-zh-cn \
@@ -33,6 +34,7 @@ TARGET_DEVICES += hiker_hiker-p910nd
 define Device/hiker_hiker-wifi-client
   $(call Device/hiker_hiker-common)
   DEVICE_MODEL := Hiker WifiClient
+  SUPPORTED_DEVICES := hiker,hiker-wificlient HIKER
   DEVICE_PACKAGES := luci-light luci-theme-bootstrap \
     luci-i18n-base-zh-cn \
     p910nd luci-app-p910nd luci-i18n-p910nd-zh-cn \
@@ -47,6 +49,7 @@ TARGET_DEVICES += hiker_hiker-wifi-client
 define Device/hiker_hiker-full-wifi
   $(call Device/hiker_hiker-common)
   DEVICE_MODEL := Hiker WifiFull
+  SUPPORTED_DEVICES := hiker,hiker-wififull HIKER
   DEVICE_PACKAGES := luci-light luci-theme-bootstrap \
     luci-i18n-base-zh-cn \
     p910nd luci-app-p910nd luci-i18n-p910nd-zh-cn \
