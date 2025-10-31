@@ -114,7 +114,7 @@ jobs:
         working-directory: ./openwrt
         run: |
           # Install target files from feed using feed Makefile
-          make -C feeds/custom install
+          make -C feeds/custom install TOPDIR=$(pwd)
           
           echo "✓ Target files installed via feed"
 
