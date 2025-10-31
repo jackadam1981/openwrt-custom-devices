@@ -38,22 +38,20 @@ fi
 echo "✓ 设备可达"
 echo ""
 
-# 创建临时远程脚本
-REMOTE_SCRIPT="/tmp/collect_perf_$$.sh"
-
 # 创建输出文件
 OUTPUT_FILE="performance-report-$(date +%Y%m%d-%H%M%S).txt"
 
-# 尝试SSH连接并收集数据
+# 连接设备并收集数据
 echo "正在连接设备并收集数据..."
 echo ""
 
-# 使用expect或sshpass（如果可用）
-if command -v sshpass > /dev/null 2>&1; then
-    sshpass -p '' ssh -o StrictHostKeyChecking=no \
-        -o UserKnownHostsFile=/dev/null \
-        -o ConnectTimeout=10 \
-        root@"$DEVICE_IP" 'bash -s' << 'REMOTE_COMMANDS' | tee "$OUTPUT_FILE"
+# 直接使用SSH连接（类似flash.sh的方式）
+ssh -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    -o HostKeyAlgorithms=+ssh-rsa \
+    -o PubkeyAcceptedAlgorithms=+ssh-rsa \
+    -o ConnectTimeout=10 \
+    root@"$DEVICE_IP" 'bash -s' << 'REMOTE_COMMANDS' | tee "$OUTPUT_FILE"
 # 远程执行的命令
 echo "======================================"
 echo "Hiker RT5350 性能报告"
@@ -115,49 +113,10 @@ echo "收集完成"
 echo "======================================"
 REMOTE_COMMANDS
 
-elif command -v expect > /dev/null 2>&1; then
-    # 使用expect
-    expect -c "
-    set timeout 30
-    spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$DEVICE_IP
-    expect {
-        \"password:\" { send \"\\r\" }
-        timeout { puts \"Connection timeout\"; exit 1 }
-    }
-    expect \"#\"
-    send \"uptime\r\"
-    expect \"#\"
-    send \"free -k\r\"
-    expect \"#\"
-    send \"top -bn1 | head -5\r\"
-    expect \"#\"
-    send \"exit\r\"
-    expect eof
-    " | tee "$OUTPUT_FILE"
-else
-    echo "⚠️  未找到 sshpass 或 expect"
-    echo ""
-    echo "请手动SSH到设备并运行以下命令:"
-    echo ""
-    echo "ssh root@$DEVICE_IP"
-    echo ""
-    echo "然后在设备上运行:"
-    cat << 'MANUAL_COMMANDS'
-(
-echo "=== 系统负载 ===" && uptime && echo ""
-echo "=== 内存使用 (KB) ===" && free -k && echo ""
-echo "=== CPU使用 ===" && top -bn1 | head -5 && echo ""
-echo "=== 存储使用 ===" && df -h && echo ""
-echo "=== OpenWrt版本 ===" && cat /etc/openwrt_release 2>/dev/null || cat /etc/os-release && echo ""
-echo "=== 内核信息 ===" && uname -a
-)
-MANUAL_COMMANDS
-    echo ""
-    echo "请将输出保存并发送给我。"
-    exit 0
-fi
+# 检查收集结果
+SSH_EXIT=$?
 
-if [ $? -eq 0 ] && [ -f "$OUTPUT_FILE" ]; then
+if [ $SSH_EXIT -eq 0 ] && [ -f "$OUTPUT_FILE" ]; then
     echo ""
     echo "✓ 数据收集完成"
     echo "  报告已保存到: $OUTPUT_FILE"
@@ -167,6 +126,7 @@ if [ $? -eq 0 ] && [ -f "$OUTPUT_FILE" ]; then
 else
     echo ""
     echo "❌ 数据收集失败"
+    echo "  SSH退出码: $SSH_EXIT"
     exit 1
 fi
 
