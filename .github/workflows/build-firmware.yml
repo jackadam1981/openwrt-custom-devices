@@ -81,11 +81,19 @@ jobs:
       - name: Update & Install feeds
         working-directory: ./openwrt
         run: |
+          # Use GitHub mirror instead of git.openwrt.org (more stable)
+          sed -i 's|git.openwrt.org/feed|github.com/openwrt|g' feeds.conf.default
+          sed -i 's|git.openwrt.org/project|github.com/openwrt|g' feeds.conf.default
+          
           # Add custom-devices feed
           echo "src-link custom $GITHUB_WORKSPACE/custom-devices" >> feeds.conf.default
           
           # Disable telephony feed
           sed -i 's/^src-git telephony/#src-git telephony/' feeds.conf.default
+          
+          # Show feeds configuration
+          echo "Using feeds:"
+          cat feeds.conf.default
           
           # Update feeds
           ./scripts/feeds update -a
