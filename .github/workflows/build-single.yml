@@ -122,7 +122,7 @@ jobs:
         working-directory: ./openwrt
         run: |
           # Copy defconfig from feed
-          cp $GITHUB_WORKSPACE/custom-devices/configs/${{ inputs.device }}/${{ inputs.profile }}.config .config
+          cp feeds/custom/configs/${{ inputs.device }}/${{ inputs.profile }}.config .config
           echo "✓ Config loaded: ${{ inputs.profile }}"
           
           # No files overlay - use OpenWrt defaults

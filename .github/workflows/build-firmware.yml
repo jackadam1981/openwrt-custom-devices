@@ -113,7 +113,7 @@ jobs:
         working-directory: ./openwrt
         run: |
           # Copy defconfig from feed
-          cp $GITHUB_WORKSPACE/custom-devices/configs/hiker-rt5350/${{ matrix.profile.id }}.config .config
+          cp feeds/custom/configs/hiker-rt5350/${{ matrix.profile.id }}.config .config
           echo "✓ Config loaded: ${{ matrix.profile.id }}"
           
           # No files overlay - use OpenWrt defaults
