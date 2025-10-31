@@ -93,55 +93,35 @@ jobs:
       - name: Update & Install feeds
         working-directory: ./openwrt
         run: |
-          # Add custom-devices feed (now with standard structure)
+          # Add custom-devices as feed
           echo "src-link custom $FEED_PATH" >> feeds.conf.default
+          
+          # Disable telephony feed
+          sed -i 's/^src-git telephony/#src-git telephony/' feeds.conf.default
           
           # Update feeds
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          
+          # Install hiker-target package
+          ./scripts/feeds install hiker-target
+          echo "✓ Feeds installed"
 
       - name: Install target files from feed
         working-directory: ./openwrt
         run: |
-          echo "Installing Hiker RT5350 target files from feed..."
-          
-          # Copy DTS file
-          if [ -f "$FEED_PATH/target/linux/ramips/dts/rt5350_hiker_hiker.dts" ]; then
-            cp -v "$FEED_PATH/target/linux/ramips/dts/rt5350_hiker_hiker.dts" \
-                   target/linux/ramips/dts/
-            echo "✓ DTS file copied"
-          else
-            echo "❌ DTS file not found in feed"
-            exit 1
-          fi
-          
-          # Copy hiker.mk to image directory
-          if [ -f "$FEED_PATH/target/linux/ramips/image/hiker.mk" ]; then
-            cp -v "$FEED_PATH/target/linux/ramips/image/hiker.mk" \
-                   target/linux/ramips/image/
-            echo "✓ hiker.mk copied"
-          else
-            echo "❌ hiker.mk not found in feed"
-            exit 1
-          fi
+          # Copy files from hiker-target package
+          cp -v feeds/custom/hiker-target/files/rt5350_hiker_hiker.dts target/linux/ramips/dts/
+          cp -v feeds/custom/hiker-target/files/hiker.mk target/linux/ramips/image/
           
           # Include hiker.mk in rt305x.mk
           if ! grep -q "include hiker.mk" target/linux/ramips/image/rt305x.mk; then
             echo "" >> target/linux/ramips/image/rt305x.mk
             echo "# Hiker RT5350 Devices" >> target/linux/ramips/image/rt305x.mk
             echo "include hiker.mk" >> target/linux/ramips/image/rt305x.mk
-            echo "✓ Added 'include hiker.mk' to rt305x.mk"
-          else
-            echo "✓ hiker.mk already included in rt305x.mk"
           fi
           
-          # Verify installation
-          echo ""
-          echo "Verifying installation..."
-          ls -lh target/linux/ramips/dts/rt5350_hiker_hiker.dts
-          ls -lh target/linux/ramips/image/hiker.mk
-          grep -n "include hiker.mk" target/linux/ramips/image/rt305x.mk
-          echo "✓ All target files installed successfully"
+          echo "✓ Target files installed via feed"
 
       - name: Load configuration
         working-directory: ./openwrt
