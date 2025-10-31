@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'devices/**'
+      - 'hiker-target/**'
+      - 'target/**'
       - '.github/workflows/build-firmware.yml'
   pull_request:
     branches:
