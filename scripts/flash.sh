@@ -74,7 +74,7 @@ case "$REPLY" in
             -o "HostKeyAlgorithms=+ssh-rsa" \
             -o "PubkeyAcceptedAlgorithms=+ssh-rsa" \
             root@$DEVICE_IP \
-            "sysupgrade -n /tmp/sysupgrade.bin"
+            "sysupgrade -F -n /tmp/sysupgrade.bin"
         
         echo ""
         echo "======================================"
