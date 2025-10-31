@@ -125,18 +125,17 @@ jobs:
           cp feeds/custom/configs/${{ inputs.device }}/${{ inputs.profile }}.config .config
           echo "✓ Config loaded: ${{ inputs.profile }}"
           
-          # Copy profile-specific files overlay
+          # Apply config first (defconfig may clean files directory)
+          make defconfig
+          echo "✓ Config applied"
+          
+          # Copy profile-specific files overlay AFTER defconfig
           if [ -d "$GITHUB_WORKSPACE/custom-devices/files/${{ inputs.device }}/${{ inputs.profile }}" ]; then
             cp -r "$GITHUB_WORKSPACE/custom-devices/files/${{ inputs.device }}/${{ inputs.profile }}"/* files/
             echo "✓ Files overlay applied: ${{ inputs.profile }}"
           else
-            rm -rf files
             echo "✓ Using OpenWrt default files (no custom overlay)"
           fi
-          
-          # Apply config
-          make defconfig
-          echo "✓ Config applied"
 
       - name: Download packages
         working-directory: ./openwrt
