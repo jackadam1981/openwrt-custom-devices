@@ -39,7 +39,7 @@ define Device/hiker_hiker-wifi-client
     kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-printer \
     kmod-mac80211 kmod-rt2800-lib kmod-rt2800-mmio kmod-rt2800-soc \
     kmod-rt2x00-lib kmod-rt2x00-mmio \
-    wpad-basic-mbedtls hostapd-common iw iwinfo
+    wpad-basic-mbedtls iw iwinfo
 endef
 TARGET_DEVICES += hiker_hiker-wifi-client
 
@@ -53,6 +53,6 @@ define Device/hiker_hiker-full-wifi
     kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-printer \
     kmod-mac80211 kmod-rt2800-lib kmod-rt2800-mmio kmod-rt2800-soc \
     kmod-rt2x00-lib kmod-rt2x00-mmio \
-    wpad-basic-mbedtls hostapd-common iw iwinfo
+    wpad-basic-mbedtls hostapd iw iwinfo
 endef
 TARGET_DEVICES += hiker_hiker-full-wifi
