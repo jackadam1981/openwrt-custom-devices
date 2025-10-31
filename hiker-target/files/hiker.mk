@@ -7,6 +7,7 @@ define Device/hiker_hiker-common
   IMAGE_SIZE := 7872k
   DEVICE_VENDOR := Hiker
   SUPPORTED_DEVICES := HIKER
+  DEVICE_DTS := rt5350_hiker_hiker
 endef
 
 # Profile 1: Minimal (基础版)
