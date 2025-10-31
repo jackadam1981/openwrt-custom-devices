@@ -163,9 +163,10 @@ TARGET_DEVICES += hiker_hiker-minimal
 
 ### 性能测试结果
 ```
-CPU:   0% usr   1% sys   0% nic  98% idle
-Load average: 0.71 0.42 0.17  (OpenWrt 23.05-SNAPSHOT)
-Mem: 14400K used, 17800K free
+CPU:   8% usr   8% sys   0% nic  83% idle
+Load average: 0.68, 0.69, 0.30  (OpenWrt 23.05-SNAPSHOT)
+Mem: 13MB used, 9MB available (27MB total)
+启动: 约 3 分钟后稳定
 ```
 
 ### 适用场景
