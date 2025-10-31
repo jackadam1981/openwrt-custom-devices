@@ -110,8 +110,19 @@ jobs:
             echo "✓ DTS file installed from feed"
           fi
           
-          if grep -q "hiker_hiker" target/linux/ramips/image/rt305x.mk; then
-            echo "✓ Device definition installed from feed"
+          # Include hiker.mk in rt305x.mk if not already included
+          if ! grep -q "include hiker.mk" target/linux/ramips/image/rt305x.mk; then
+            echo "" >> target/linux/ramips/image/rt305x.mk
+            echo "# Hiker RT5350 Devices" >> target/linux/ramips/image/rt305x.mk
+            echo "include hiker.mk" >> target/linux/ramips/image/rt305x.mk
+            echo "✓ Added hiker.mk to rt305x.mk"
+          else
+            echo "✓ hiker.mk already included"
+          fi
+          
+          # Verify Hiker devices are available
+          if grep -q "hiker_hiker" target/linux/ramips/image/hiker.mk; then
+            echo "✓ Hiker device definitions found"
           fi
 
       - name: Load configuration
