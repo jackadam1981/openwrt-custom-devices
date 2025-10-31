@@ -118,6 +118,42 @@ jobs:
           if [ -d "$GITHUB_WORKSPACE/custom-devices/files/hiker-rt5350/${{ matrix.profile.id }}" ]; then
             cp -r "$GITHUB_WORKSPACE/custom-devices/files/hiker-rt5350/${{ matrix.profile.id }}"/* files/
             echo "✓ Files overlay applied: ${{ matrix.profile.id }}"
+            
+            # Debug: Print key files to verify overlay
+            echo ""
+            echo "========================================="
+            echo "🔍 DEBUG: Verifying files overlay"
+            echo "========================================="
+            
+            if [ -f "files/etc/banner" ]; then
+              echo ""
+              echo "📄 files/etc/banner:"
+              head -5 files/etc/banner
+            fi
+            
+            if [ -f "files/etc/openwrt_release" ]; then
+              echo ""
+              echo "📄 files/etc/openwrt_release:"
+              cat files/etc/openwrt_release
+            fi
+            
+            if [ -f "files/etc/config/network" ]; then
+              echo ""
+              echo "📄 files/etc/config/network:"
+              cat files/etc/config/network
+            fi
+            
+            if [ -f "files/etc/config/p910nd" ]; then
+              echo ""
+              echo "📄 files/etc/config/p910nd:"
+              cat files/etc/config/p910nd
+            fi
+            
+            echo ""
+            echo "========================================="
+            echo "📊 Files directory structure:"
+            echo "========================================="
+            find files/etc -type f 2>/dev/null | head -20
           else
             echo "✓ Using OpenWrt default files (no custom overlay)"
           fi
