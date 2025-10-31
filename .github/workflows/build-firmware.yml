@@ -104,8 +104,8 @@ jobs:
       - name: Install target files
         working-directory: ./openwrt
         run: |
-          # Copy files from hiker-target feed package
-          cp -v feeds/custom/hiker-target/files/rt5350_hiker_hiker.dts target/linux/ramips/dts/
+          # Copy DTS files from hiker-target feed package
+          cp -v feeds/custom/hiker-target/files/rt5350_hiker_hiker-*.dts target/linux/ramips/dts/
           cp -v feeds/custom/hiker-target/files/hiker.mk target/linux/ramips/image/
           
           # Include hiker.mk in rt305x.mk
