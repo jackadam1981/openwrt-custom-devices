@@ -113,8 +113,8 @@ TARGET_DEVICES += hiker_hiker-minimal
 | LuCI P910ND 界面 | ❌ | ✅ | ✅ | ✅ |
 | **网络功能** | | | | |
 | WiFi 客户端 | ❌ | ❌ | ✅ | ✅ |
-| WiFi AP | ❌ | ❌ | ❌ | ✅ |
 | wpad-basic (WPA客户端认证) | ❌ | ❌ | ✅ | ✅ |
+| WiFi AP | ❌ | ❌ | ❌ | ✅ |
 | hostapd (AP认证) | ❌ | ❌ | ❌ | ✅ |
 
 > **注意**: WiFi客户端需要 `wpad` 连接到加密的网络；WiFi AP需要 `hostapd` 提供加密的网络。因此 full-wifi 同时包含两者。
