@@ -116,9 +116,14 @@ jobs:
           cp feeds/custom/configs/hiker-rt5350/${{ matrix.profile.id }}.config .config
           echo "✓ Config loaded: ${{ matrix.profile.id }}"
           
-          # No files overlay - use OpenWrt defaults
-          rm -rf files
-          echo "✓ Using OpenWrt default files (no custom overlay)"
+          # Copy profile-specific files overlay
+          if [ -d "$GITHUB_WORKSPACE/custom-devices/files/hiker-rt5350/${{ matrix.profile.id }}" ]; then
+            cp -r "$GITHUB_WORKSPACE/custom-devices/files/hiker-rt5350/${{ matrix.profile.id }}"/* files/
+            echo "✓ Files overlay applied: ${{ matrix.profile.id }}"
+          else
+            rm -rf files
+            echo "✓ Using OpenWrt default files (no custom overlay)"
+          fi
           
           # Apply config
           make defconfig

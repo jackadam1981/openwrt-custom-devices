@@ -17,6 +17,9 @@ tmp/
 performance-reports/
 perf-*.txt
 
+# Releases
+releases/
+
 # Editor files
 .vscode/
 .idea/

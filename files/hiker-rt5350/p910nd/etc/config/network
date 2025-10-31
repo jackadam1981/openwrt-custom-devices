@@ -1,0 +1,31 @@
+# Hiker Print - Network Configuration
+# 双接口配置:
+# 1. lan_backup: 192.168.100.1 (静态管理IP)
+# 2. lan_print: DHCP (自动获取网络IP)
+
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config globals 'globals'
+	option ula_prefix 'fd83:390e:6818::/48'
+
+# Bridge 配置
+config device
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'eth0'
+
+# 接口1: LanBackup - 静态管理IP
+config interface 'lan_backup'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '192.168.100.1'
+	option netmask '255.255.255.0'
+
+# 接口2: LanPrint - DHCP客户端
+config interface 'lan_print'
+	option device 'br-lan'
+	option proto 'dhcp'
