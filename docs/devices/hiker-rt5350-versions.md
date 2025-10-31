@@ -164,7 +164,7 @@ TARGET_DEVICES += hiker_hiker-minimal
 ### 性能测试结果
 ```
 CPU:   0% usr   1% sys   0% nic  98% idle
-Load average: 0.71 0.42 0.17  (OpenWrt 25.03)
+Load average: 0.71 0.42 0.17  (OpenWrt 23.05-SNAPSHOT)
 Mem: 14400K used, 17800K free
 ```
 
