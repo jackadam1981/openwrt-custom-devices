@@ -101,21 +101,13 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: Install target files
+      - name: Install target files via feed
         working-directory: ./openwrt
         run: |
-          # Copy DTS files from hiker-target feed package
-          cp -v feeds/custom/hiker-target/files/rt5350_hiker_hiker-*.dts target/linux/ramips/dts/
-          cp -v feeds/custom/hiker-target/files/hiker.mk target/linux/ramips/image/
+          # Build hiker-target package to install DTS and image files
+          make package/hiker-target/compile V=s
           
-          # Include hiker.mk in rt305x.mk
-          if ! grep -q "include hiker.mk" target/linux/ramips/image/rt305x.mk; then
-            echo "" >> target/linux/ramips/image/rt305x.mk
-            echo "# Hiker RT5350 Devices" >> target/linux/ramips/image/rt305x.mk
-            echo "include hiker.mk" >> target/linux/ramips/image/rt305x.mk
-          fi
-          
-          echo "✓ Target files installed"
+          echo "✓ Target files installed via feed"
 
       - name: Load configuration
         working-directory: ./openwrt

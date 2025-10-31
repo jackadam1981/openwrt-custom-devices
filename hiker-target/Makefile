@@ -31,8 +31,8 @@ define Package/hiker-target/install
 endef
 
 define Build/Prepare
-	# Install DTS file
-	$(CP) ./files/rt5350_hiker_hiker.dts $(LINUX_DIR)/arch/mips/boot/dts/ralink/ || true
+	# Install all DTS files
+	$(CP) ./files/rt5350_hiker_hiker*.dts $(TOPDIR)/target/linux/ramips/dts/
 	
 	# Install hiker.mk
 	$(CP) ./files/hiker.mk $(TOPDIR)/target/linux/ramips/image/
