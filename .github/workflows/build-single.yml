@@ -65,7 +65,6 @@ jobs:
           git clone --depth 1 https://github.com/${{ env.OPENWRT_REPO }}.git -b ${{ inputs.openwrt_version }} openwrt
           cd openwrt
           echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
-          echo "FEED_PATH=$GITHUB_WORKSPACE/custom-devices" >> $GITHUB_ENV
 
       - name: Get OpenWrt version info
         working-directory: ./openwrt
@@ -93,8 +92,8 @@ jobs:
       - name: Update & Install feeds
         working-directory: ./openwrt
         run: |
-          # Add custom-devices as feed
-          echo "src-link custom $FEED_PATH" >> feeds.conf.default
+          # Add custom-devices feed
+          echo "src-link custom $GITHUB_WORKSPACE/custom-devices" >> feeds.conf.default
           
           # Disable telephony feed
           sed -i 's/^src-git telephony/#src-git telephony/' feeds.conf.default
@@ -102,15 +101,11 @@ jobs:
           # Update feeds
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-          
-          # Install hiker-target package
-          ./scripts/feeds install hiker-target
-          echo "✓ Feeds installed"
 
-      - name: Install target files from feed
+      - name: Install target files
         working-directory: ./openwrt
         run: |
-          # Copy files from hiker-target package
+          # Copy files from hiker-target feed package
           cp -v feeds/custom/hiker-target/files/rt5350_hiker_hiker.dts target/linux/ramips/dts/
           cp -v feeds/custom/hiker-target/files/hiker.mk target/linux/ramips/image/
           
@@ -121,13 +116,13 @@ jobs:
             echo "include hiker.mk" >> target/linux/ramips/image/rt305x.mk
           fi
           
-          echo "✓ Target files installed via feed"
+          echo "✓ Target files installed"
 
       - name: Load configuration
         working-directory: ./openwrt
         run: |
           # Copy defconfig from feed
-          cp $FEED_PATH/configs/${{ inputs.device }}/${{ inputs.profile }}.config .config
+          cp $GITHUB_WORKSPACE/custom-devices/configs/${{ inputs.device }}/${{ inputs.profile }}.config .config
           echo "✓ Config loaded: ${{ inputs.profile }}"
           
           # No files overlay - use OpenWrt defaults
