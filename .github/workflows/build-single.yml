@@ -134,7 +134,7 @@ jobs:
           if [ -d "$SRC_DIR" ]; then
             echo "Copying files from: $SRC_DIR"
             ls -la "$SRC_DIR" || echo "Cannot list source directory"
-            cp -r "$SRC_DIR"/* files/ 2>&1 || echo "Copy failed with code: $?"
+            cp -rv "$SRC_DIR"/* files/ 2>&1 || echo "Copy failed with code: $?"
             echo "✓ Files overlay applied: ${{ inputs.profile }}"
             
             # Debug: Print key files to verify overlay
