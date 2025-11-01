@@ -119,7 +119,8 @@ jobs:
           if [ -d "$SRC_DIR" ]; then
             echo "Copying files from: $SRC_DIR"
             ls -la "$SRC_DIR" || echo "Cannot list source directory"
-            cp -rv "$SRC_DIR"/* files/ 2>&1 || echo "Copy failed with code: $?"
+            # Use tar to preserve directory structure properly
+            (cd "$SRC_DIR" && tar cf - .) | tar xf - -C files/
             echo "✓ Files overlay applied: ${{ matrix.profile.id }}"
             
             # Debug: Print key files to verify overlay
