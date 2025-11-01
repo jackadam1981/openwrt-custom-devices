@@ -7,33 +7,68 @@
 
 LED_R="/sys/class/leds/red:led_r/brightness"
 LED_R_TRIGGER="/sys/class/leds/red:led_r/trigger"
+PIDFILE="/var/run/reset_button_led.pid"
 
-# Function to blink LED
-blink_led() {
+# Function to check if LED script is running
+stop_led_script() {
+	if [ -f "$PIDFILE" ]; then
+		local pid=$(cat "$PIDFILE")
+		if [ -d "/proc/$pid" ]; then
+			kill "$pid" 2>/dev/null
+		fi
+		rm -f "$PIDFILE"
+	fi
+}
+
+# Function to blink LED with frequency based on elapsed time
+led_blink_loop() {
 	local led_file=$1
-	local duration=$2
-	local period=$3
-	local count=$(($duration * 1000 / $period / 2))
+	local period_slow=$2  # Period for 2-5s (slow blink: 0.5s)
+	local period_fast=$3  # Period for 5s+ (fast blink: 0.1s)
 	
-	for i in $(seq $count); do
+	echo "none" > "$LED_R_TRIGGER" 2>/dev/null
+	
+	local start_time=$(date +%s)
+	
+	while [ ! -f /tmp/stop_led_blink ]; do
+		local now=$(date +%s)
+		local elapsed=$((now - start_time))
+		
+		# Determine blink period based on elapsed time
+		if [ $elapsed -ge 5 ]; then
+			local period=$period_fast  # Fast blink after 5s
+		else
+			local period=$period_slow  # Slow blink before 5s
+		fi
+		
+		# Turn on
 		echo 1 > "$led_file" 2>/dev/null
-		usleep $(($period * 1000 / 2))
+		sleep "$period"
+		
+		# Turn off
 		echo 0 > "$led_file" 2>/dev/null
-		usleep $(($period * 1000 / 2))
+		sleep "$period"
 	done
+	
+	rm -f /tmp/stop_led_blink
 }
 
 case "${ACTION}" in
 	pressed)
-		# Button pressed - start LED feedback
-		# Note: SEEN is only available on released
-		# So we can't detect duration during press
-		echo "none" > "$LED_R_TRIGGER" 2>/dev/null
-		echo 0 > "$LED_R" 2>/dev/null
-		exit 0
+		# Button pressed - start LED feedback loop
+		stop_led_script
+		
+		# Start background LED blinking process
+		touch /tmp/stop_led_blink
+		led_blink_loop "$LED_R" 0.5 0.1 &
+		echo $! > "$PIDFILE"
 		;;
 	released)
-		# Button released - execute action based on duration
+		# Button released - stop LED and execute action
+		stop_led_script
+		touch /tmp/stop_led_blink
+		sleep 0.1  # Wait for LED to turn off
+		
 		logger "$BUTTON pressed for $SEEN seconds"
 		
 		# Turn off LED
