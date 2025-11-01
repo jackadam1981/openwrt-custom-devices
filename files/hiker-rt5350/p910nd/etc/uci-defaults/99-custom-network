@@ -2,12 +2,23 @@
 # Hiker Print - Network Configuration
 # Configure dual virtual interfaces: LanBackup (static) + LanPrint (DHCP)
 
-# First, set the physical device for br-lan
-uci set network.lan.device='br-lan'
+# First, update firewall zones before deleting lan interface
+if [ -f /etc/config/firewall ]; then
+	# Find and update existing lan zone
+	for i in 0 1 2 3 4 5 6 7 8 9 10; do
+		zone_name=$(uci get firewall.@zone[$i].name 2>/dev/null)
+		if [ "$zone_name" = "lan" ]; then
+			uci set firewall.@zone[$i].network='lanBackup LanPrint'
+			uci commit firewall
+			break
+		fi
+	done
+fi
 
-# Remove default lan IP and configure LanBackup (static management IP)
-uci delete network.lan.ipaddr
-uci delete network.lan.netmask
+# Remove default lan interface (now safe since firewall updated)
+uci delete network.lan
+
+# Configure LanBackup (static management IP)
 uci set network.lanBackup=interface
 uci set network.lanBackup.device='br-lan'
 uci set network.lanBackup.proto='static'
