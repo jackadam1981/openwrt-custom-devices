@@ -1,9 +1,0 @@
-# Hiker RT5350 固件版本信息
-VERSION="full-wifi_v0.1"
-VERSION_NAME="WiFi AP + 打印"
-BUILD_DATE="$(date +%Y-%m-%d)"
-OPENWRT_VERSION="23.05-SNAPSHOT"
-FEATURES="LuCI 中文界面, SSH, WiFi AP, P910ND 打印服务器, USB 打印机"
-PACKAGES="luci-light, luci-i18n-base-zh-cn, p910nd, luci-app-p910nd, kmod-usb-printer, hostapd, wpad-basic-mbedtls"
-DESCRIPTION="完整版：WiFi AP + 打印服务器，推荐"
-

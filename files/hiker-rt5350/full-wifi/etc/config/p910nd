@@ -1,9 +1,0 @@
-# Hiker Print - P910ND Configuration
-# 默认启用打印服务器
-
-config p910nd
-	option device '/dev/usb/lp0'
-	option port '0'
-	option bidirectional '1'
-	option enabled '1'
-
