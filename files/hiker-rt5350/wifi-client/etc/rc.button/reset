@@ -1,33 +1,72 @@
 #!/bin/sh
-# Hiker Print - Reset Button Handler
+# Hiker Print - Reset Button Handler with LED feedback
 # 2秒: LED慢闪提示重启，松开即重启
 # 5秒: LED快闪提示恢复出厂，松开即执行重置
 
 . /lib/functions.sh
 
+LED_R="/sys/class/leds/red:led_r/brightness"
+LED_R_TRIGGER="/sys/class/leds/red:led_r/trigger"
+
+# Function to blink LED
+blink_led() {
+	local led_file=$1
+	local duration=$2
+	local period=$3
+	local count=$(($duration * 1000 / $period / 2))
+	
+	for i in $(seq $count); do
+		echo 1 > "$led_file" 2>/dev/null
+		usleep $(($period * 1000 / 2))
+		echo 0 > "$led_file" 2>/dev/null
+		usleep $(($period * 1000 / 2))
+	done
+}
+
 case "${ACTION}" in
 	pressed)
-		# Button pressed - start monitoring timer
+		# Button pressed - start LED feedback
+		# Note: SEEN is only available on released
+		# So we can't detect duration during press
+		echo "none" > "$LED_R_TRIGGER" 2>/dev/null
+		echo 0 > "$LED_R" 2>/dev/null
 		exit 0
 		;;
 	released)
-		# Button released - execute action
+		# Button released - execute action based on duration
 		logger "$BUTTON pressed for $SEEN seconds"
 		
-		if [ "$SEEN" -ge 2 ] && [ "$SEEN" -lt 5 ]
+		# Turn off LED
+		echo "none" > "$LED_R_TRIGGER" 2>/dev/null
+		echo 0 > "$LED_R" 2>/dev/null
+		
+		if [ "$SEEN" -lt 2 ]
+		then
+			# <2秒: 无操作
+			echo "No action (<2s)" > /dev/console
+			exit 0
+		elif [ "$SEEN" -ge 2 ] && [ "$SEEN" -lt 5 ]
 		then
 			# 2-5秒: 重启
 			echo "REBOOT (${SEEN}s pressed)" > /dev/console
+			echo 1 > "$LED_R" 2>/dev/null
 			sync
+			sleep 0.5
 			reboot
 		elif [ "$SEEN" -ge 5 ]
 		then
 			# >=5秒: 恢复出厂设置
 			echo "FACTORY RESET (${SEEN}s pressed)" > /dev/console
+			# Fast blink before reset
+			for i in 1 2 3 4 5; do
+				echo 1 > "$LED_R" 2>/dev/null
+				sleep 0.1
+				echo 0 > "$LED_R" 2>/dev/null
+				sleep 0.1
+			done
 			jffs2reset -y && reboot &
 		fi
 		;;
 esac
 
 return 0
-
