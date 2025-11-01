@@ -1,8 +1,26 @@
 #!/bin/sh
 # Hiker Print - Network Configuration
-# Set LAN IP to 192.168.100.1
+# Configure dual virtual interfaces: LanBackup (static) + LanPrint (DHCP)
 
-uci set network.lan.ipaddr='192.168.100.1'
-uci set network.lan.netmask='255.255.255.0'
+# First, set the physical device for br-lan
+uci set network.lan.device='br-lan'
+
+# Remove default lan IP and configure LanBackup (static management IP)
+uci delete network.lan.ipaddr
+uci delete network.lan.netmask
+uci set network.lanBackup=interface
+uci set network.lanBackup.device='br-lan'
+uci set network.lanBackup.proto='static'
+uci set network.lanBackup.ipaddr='192.168.100.1'
+uci set network.lanBackup.netmask='255.255.255.0'
+
+# Configure LanPrint (DHCP interface)
+uci set network.LanPrint=interface
+uci set network.LanPrint.device='br-lan'
+uci set network.LanPrint.proto='dhcp'
+
 uci commit network
+
+# Enable p910nd service
+/etc/init.d/p910nd enable
 

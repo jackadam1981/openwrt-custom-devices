@@ -1,0 +1,34 @@
+#!/bin/sh
+# Hiker Full WiFi - Initial Configuration
+# Configure dual virtual interfaces and enable services
+
+# Configure dual virtual interfaces: LanBackup (static) + LanPrint (DHCP)
+uci set network.lan.device='br-lan'
+uci delete network.lan.ipaddr
+uci delete network.lan.netmask
+uci set network.lanBackup=interface
+uci set network.lanBackup.device='br-lan'
+uci set network.lanBackup.proto='static'
+uci set network.lanBackup.ipaddr='192.168.100.1'
+uci set network.lanBackup.netmask='255.255.255.0'
+
+uci set network.LanPrint=interface
+uci set network.LanPrint.device='br-lan'
+uci set network.LanPrint.proto='dhcp'
+
+uci commit network
+
+# Configure wireless AP with default SSID
+uci set wireless.radio0.country='CN'
+uci set wireless.radio0.disabled='0'
+uci set wireless.default_radio0.ssid='Hiker-WiFi'
+uci set wireless.default_radio0.encryption='none'
+uci set wireless.default_radio0.network='lan'
+uci commit wireless
+
+# Enable p910nd service
+/etc/init.d/p910nd enable
+
+# Note: wifi reload is not needed in uci-defaults
+# The wireless interface will be started automatically after boot
+
