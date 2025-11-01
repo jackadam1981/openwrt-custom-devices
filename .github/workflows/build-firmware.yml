@@ -16,7 +16,43 @@ env:
   TZ: Asia/Shanghai
 
 jobs:
+  discover-profiles:
+    runs-on: ubuntu-24.04
+    outputs:
+      profiles: ${{ steps.get-profiles.outputs.profiles }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get profiles
+        id: get-profiles
+        run: |
+          echo "Discovering profiles from configs/hiker-rt5350/"
+          # Map known profile IDs to display names
+          declare -A name_map
+          name_map=(
+            ["minimal"]="Minimal"
+            ["p910nd"]="P910ND"
+            ["wifi-client"]="WiFi-Client"
+            ["full-wifi"]="Full-WiFi"
+          )
+          
+          # Find all .config files and build profile list
+          profiles=$(for config in configs/hiker-rt5350/*.config; do
+            id=$(basename "$config" .config)
+            if [[ -n "${name_map[$id]}" ]]; then
+              name="${name_map[$id]}"
+            else
+              # Auto-generate name if not mapped
+              name=$(echo "$id" | sed 's/-\(.\)/\U\1/g' | sed 's/^\(.\)/\u\1/')
+            fi
+            echo "{\"id\":\"$id\",\"name\":\"$name\"}"
+          done | jq -s '.')
+          
+          echo "Profiles discovered: $profiles"
+          echo "profiles=$profiles" >> $GITHUB_OUTPUT
+
   build:
+    needs: discover-profiles
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -26,15 +62,7 @@ jobs:
             name: SNAPSHOT
           - branch: openwrt-23.05
             name: "23.05"
-        profile:
-          - id: minimal
-            name: Minimal
-          - id: p910nd
-            name: P910ND
-          - id: wifi-client
-            name: WiFi-Client
-          - id: full-wifi
-            name: Full-WiFi
+        profile: ${{ fromJson(needs.discover-profiles.outputs.profiles) }}
 
     name: Hiker RT5350 - ${{ matrix.profile.name }} (OpenWrt ${{ matrix.openwrt_version.name }})
     
