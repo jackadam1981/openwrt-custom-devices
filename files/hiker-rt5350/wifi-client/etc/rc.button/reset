@@ -1,12 +1,14 @@
 #!/bin/sh
 # Hiker Print - Reset Button Handler with LED feedback
-# 2秒: LED慢闪提示重启，松开即重启
-# 5秒: LED快闪提示恢复出厂，松开即执行重置
+# 按住2秒：开始红蓝交替慢闪，2秒间隔，松开红蓝长亮5秒，重启
+# 按住超过5秒：开始红蓝交替快闪，0.5秒间隔，松开红蓝长亮5秒，恢复出厂设置
 
 . /lib/functions.sh
 
-LED_R="/sys/class/leds/red:led_r/brightness"
-LED_R_TRIGGER="/sys/class/leds/red:led_r/trigger"
+LED_R="/sys/class/leds/hiker:red:led_r/brightness"
+LED_R_TRIGGER="/sys/class/leds/hiker:red:led_r/trigger"
+LED_B="/sys/class/leds/hiker:blue:led_b/brightness"
+LED_B_TRIGGER="/sys/class/leds/hiker:blue:led_b/trigger"
 PIDFILE="/var/run/reset_button_led.pid"
 
 # Function to check if LED script is running
@@ -18,87 +20,110 @@ stop_led_script() {
 		fi
 		rm -f "$PIDFILE"
 	fi
+	rm -f /tmp/stop_led_blink
 }
 
-# Function to blink LED with frequency based on elapsed time
-led_blink_loop() {
-	local led_file=$1
-	local period_slow=$2  # Period for 2-5s (slow blink: 0.5s)
-	local period_fast=$3  # Period for 5s+ (fast blink: 0.1s)
+# Function to turn off both LEDs
+turn_off_leds() {
+	echo "none" > "$LED_R_TRIGGER" 2>/dev/null
+	echo "none" > "$LED_B_TRIGGER" 2>/dev/null
+	echo 0 > "$LED_R" 2>/dev/null
+	echo 0 > "$LED_B" 2>/dev/null
+}
+
+# Function to turn on both LEDs
+turn_on_leds() {
+	echo "none" > "$LED_R_TRIGGER" 2>/dev/null
+	echo "none" > "$LED_B_TRIGGER" 2>/dev/null
+	echo 1 > "$LED_R" 2>/dev/null
+	echo 1 > "$LED_B" 2>/dev/null
+}
+
+# Function to alternate red and blue LEDs with frequency based on elapsed time
+led_alternate_blink_loop() {
+	local period_slow=$1  # Period for 2-5s (slow blink: 2s)
+	local period_fast=$2  # Period for 5s+ (fast blink: 0.5s)
 	
 	echo "none" > "$LED_R_TRIGGER" 2>/dev/null
+	echo "none" > "$LED_B_TRIGGER" 2>/dev/null
 	
 	local start_time=$(date +%s)
+	local red_on=0  # 0=red off, 1=red on
 	
 	while [ ! -f /tmp/stop_led_blink ]; do
 		local now=$(date +%s)
 		local elapsed=$((now - start_time))
 		
-		# Determine blink period based on elapsed time
-		if [ $elapsed -ge 5 ]; then
-			local period=$period_fast  # Fast blink after 5s
-		else
-			local period=$period_slow  # Slow blink before 5s
+		# Only start blinking after 2 seconds
+		if [ $elapsed -lt 2 ]; then
+			sleep 0.1
+			continue
 		fi
 		
-		# Turn on
-		echo 1 > "$led_file" 2>/dev/null
-		sleep "$period"
+		# Determine blink period based on elapsed time
+		if [ $elapsed -ge 5 ]; then
+			local period=$period_fast  # Fast blink after 5s (0.5s)
+		else
+			local period=$period_slow  # Slow blink before 5s (2s)
+		fi
 		
-		# Turn off
-		echo 0 > "$led_file" 2>/dev/null
+		# Alternate between red and blue
+		if [ $red_on -eq 0 ]; then
+			# Red on, Blue off
+			echo 1 > "$LED_R" 2>/dev/null
+			echo 0 > "$LED_B" 2>/dev/null
+			red_on=1
+		else
+			# Red off, Blue on
+			echo 0 > "$LED_R" 2>/dev/null
+			echo 1 > "$LED_B" 2>/dev/null
+			red_on=0
+		fi
+		
 		sleep "$period"
 	done
 	
+	turn_off_leds
 	rm -f /tmp/stop_led_blink
 }
 
 case "${ACTION}" in
 	pressed)
-		# Button pressed - start LED feedback loop
+		# Button pressed - wait 2 seconds then start LED feedback loop
 		stop_led_script
 		
-		# Start background LED blinking process
-		touch /tmp/stop_led_blink
-		led_blink_loop "$LED_R" 0.5 0.1 &
+		# Start background LED alternating blink process
+		rm -f /tmp/stop_led_blink
+		led_alternate_blink_loop 2.0 0.5 &
 		echo $! > "$PIDFILE"
 		;;
 	released)
 		# Button released - stop LED and execute action
 		stop_led_script
-		touch /tmp/stop_led_blink
 		sleep 0.1  # Wait for LED to turn off
 		
 		logger "$BUTTON pressed for $SEEN seconds"
-		
-		# Turn off LED
-		echo "none" > "$LED_R_TRIGGER" 2>/dev/null
-		echo 0 > "$LED_R" 2>/dev/null
 		
 		if [ "$SEEN" -lt 2 ]
 		then
 			# <2秒: 无操作
 			echo "No action (<2s)" > /dev/console
+			turn_off_leds
 			exit 0
 		elif [ "$SEEN" -ge 2 ] && [ "$SEEN" -lt 5 ]
 		then
-			# 2-5秒: 重启
+			# 2-5秒: 红蓝长亮5秒，然后重启
 			echo "REBOOT (${SEEN}s pressed)" > /dev/console
-			echo 1 > "$LED_R" 2>/dev/null
+			turn_on_leds
+			sleep 5
 			sync
-			sleep 0.5
 			reboot
 		elif [ "$SEEN" -ge 5 ]
 		then
-			# >=5秒: 恢复出厂设置
+			# >=5秒: 红蓝长亮5秒，然后恢复出厂设置
 			echo "FACTORY RESET (${SEEN}s pressed)" > /dev/console
-			# Fast blink before reset
-			for i in 1 2 3 4 5; do
-				echo 1 > "$LED_R" 2>/dev/null
-				sleep 0.1
-				echo 0 > "$LED_R" 2>/dev/null
-				sleep 0.1
-			done
+			turn_on_leds
+			sleep 5
 			jffs2reset -y && reboot &
 		fi
 		;;
