@@ -5,13 +5,16 @@
 # First, update firewall zones before deleting lan interface
 if [ -f /etc/config/firewall ]; then
 	# Find and update existing lan zone
-	for i in 0 1 2 3 4 5 6 7 8 9 10; do
+	i=0
+	while uci get firewall.@zone[$i] >/dev/null 2>&1; do
 		zone_name=$(uci get firewall.@zone[$i].name 2>/dev/null)
 		if [ "$zone_name" = "lan" ]; then
 			uci set firewall.@zone[$i].network='lanBackup LanPrint'
 			uci commit firewall
 			break
 		fi
+		i=$((i + 1))
+		[ $i -gt 10 ] && break  # Safety limit
 	done
 fi
 
