@@ -90,8 +90,11 @@ jobs:
           make defconfig
           
           # Copy profile-specific files overlay AFTER defconfig
-          if [ -d "$GITHUB_WORKSPACE/custom-devices/files/${{ matrix.device }}/${{ matrix.profile }}" ]; then
-            cp -r "$GITHUB_WORKSPACE/custom-devices/files/${{ matrix.device }}/${{ matrix.profile }}"/* files/
+          SRC_DIR="$GITHUB_WORKSPACE/custom-devices/files/${{ matrix.device }}/${{ matrix.profile }}"
+          if [ -d "$SRC_DIR" ]; then
+            echo "Copying files from: $SRC_DIR"
+            ls -la "$SRC_DIR" || echo "Cannot list source directory"
+            cp -rv "$SRC_DIR"/* files/ || echo "Copy failed!"
             echo "✓ Files overlay applied: ${{ matrix.profile }}"
             
             # Debug: Print key files to verify overlay
@@ -100,36 +103,57 @@ jobs:
             echo "🔍 DEBUG: Verifying files overlay"
             echo "========================================="
             
+            echo ""
+            echo "📂 files/ directory contents:"
+            ls -la files/ || echo "files/ directory is empty or not found"
+            
+            echo ""
+            echo "📂 files/etc/ directory contents:"
+            ls -la files/etc/ 2>/dev/null || echo "files/etc/ not found"
+            
             if [ -f "files/etc/banner" ]; then
               echo ""
               echo "📄 files/etc/banner:"
               head -5 files/etc/banner
+            else
+              echo ""
+              echo "❌ files/etc/banner NOT FOUND"
             fi
             
             if [ -f "files/etc/openwrt_release" ]; then
               echo ""
               echo "📄 files/etc/openwrt_release:"
               cat files/etc/openwrt_release
+            else
+              echo ""
+              echo "❌ files/etc/openwrt_release NOT FOUND"
             fi
             
             if [ -f "files/etc/config/network" ]; then
               echo ""
               echo "📄 files/etc/config/network:"
               cat files/etc/config/network
+            else
+              echo ""
+              echo "❌ files/etc/config/network NOT FOUND"
             fi
             
             if [ -f "files/etc/config/p910nd" ]; then
               echo ""
               echo "📄 files/etc/config/p910nd:"
               cat files/etc/config/p910nd
+            else
+              echo ""
+              echo "❌ files/etc/config/p910nd NOT FOUND"
             fi
             
             echo ""
             echo "========================================="
-            echo "📊 Files directory structure:"
+            echo "📊 Files directory structure (all):"
             echo "========================================="
-            find files/etc -type f 2>/dev/null | head -20
+            find files -type f 2>/dev/null | head -30
           else
+            echo "❌ Source directory not found: $SRC_DIR"
             echo "✓ Using OpenWrt default files (no custom overlay)"
           fi
 
