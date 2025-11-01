@@ -44,10 +44,15 @@ jobs:
               device=$(basename "$device_dir")
               echo "Found device: $device"
               
-              # Find all profiles for this device
+              # Find all profiles for this device (only p910nd and full-wifi for now)
               for config in "$device_dir"/*.config; do
                 if [ -f "$config" ]; then
                   profile_id=$(basename "$config" .config)
+                  # Filter: only build p910nd and full-wifi profiles
+                  if [[ ! "$profile_id" =~ ^(p910nd|full-wifi)$ ]]; then
+                    echo "Skipping profile: $profile_id"
+                    continue
+                  fi
                   if [[ -n "${name_map[$profile_id]}" ]]; then
                     profile_name="${name_map[$profile_id]}"
                   else
@@ -79,8 +84,6 @@ jobs:
             name: SNAPSHOT
           - branch: openwrt-24.10
             name: "24.10"
-          - branch: openwrt-23.05
-            name: "23.05"
         device_profile: ${{ fromJson(needs.discover-profiles.outputs.matrix) }}
 
     name: ${{ matrix.device_profile.device }} - ${{ matrix.device_profile.profile.name }} (OpenWrt ${{ matrix.openwrt_version.name }})
