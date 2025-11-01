@@ -1,9 +1,0 @@
-# Hiker RT5350 固件版本信息
-VERSION="wificlient_v0.1"
-VERSION_NAME="WiFi客户端"
-BUILD_DATE="$(date +%Y-%m-%d)"
-OPENWRT_VERSION="23.05-SNAPSHOT"
-FEATURES="LuCI 中文界面, SSH, P910ND 打印服务器, WiFi 客户端"
-PACKAGES="luci-light, luci-i18n-base-zh-cn, p910nd, luci-app-p910nd, wpad-basic-mbedtls, kmod-rt2800-soc"
-DESCRIPTION="打印服务器 + WiFi 客户端功能 ⚠️EEPROM 读取问题"
-
