@@ -134,12 +134,8 @@ jobs:
           if [ -d "$SRC_DIR" ]; then
             echo "Copying files from: $SRC_DIR"
             ls -la "$SRC_DIR" || echo "Cannot list source directory"
-            # Copy each subdirectory explicitly to preserve structure
-            for dir in "$SRC_DIR"/*; do
-              if [ -d "$dir" ]; then
-                cp -r "$dir" "files/" 2>&1 || true
-              fi
-            done
+            # Copy with . to preserve directory structure
+            cp -r "$SRC_DIR"/. files/
             echo "✓ Files overlay applied: ${{ inputs.profile }}"
             
             # Debug: Print key files to verify overlay
