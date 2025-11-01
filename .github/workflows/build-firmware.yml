@@ -48,8 +48,10 @@ jobs:
             echo "{\"id\":\"$id\",\"name\":\"$name\"}"
           done | jq -s '.')
           
-          echo "Profiles discovered: $profiles"
-          echo "profiles=$profiles" >> $GITHUB_OUTPUT
+          # Compress to single line for GITHUB_OUTPUT
+          profiles_oneline=$(echo "$profiles" | jq -c '.')
+          echo "Profiles discovered: $profiles_oneline"
+          echo "profiles=$profiles_oneline" >> $GITHUB_OUTPUT
 
   build:
     needs: discover-profiles
