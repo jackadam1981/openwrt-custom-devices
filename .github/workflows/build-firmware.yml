@@ -19,14 +19,15 @@ jobs:
   discover-profiles:
     runs-on: ubuntu-24.04
     outputs:
-      profiles: ${{ steps.get-profiles.outputs.profiles }}
+      matrix: ${{ steps.get-matrix.outputs.matrix }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Get profiles
-        id: get-profiles
+      - name: Get build matrix
+        id: get-matrix
         run: |
-          echo "Discovering profiles from configs/hiker-rt5350/"
+          echo "Discovering devices and profiles..."
+          
           # Map known profile IDs to display names
           declare -A name_map
           name_map=(
@@ -36,22 +37,36 @@ jobs:
             ["full-wifi"]="Full-WiFi"
           )
           
-          # Find all .config files and build profile list
-          profiles=$(for config in configs/hiker-rt5350/*.config; do
-            id=$(basename "$config" .config)
-            if [[ -n "${name_map[$id]}" ]]; then
-              name="${name_map[$id]}"
-            else
-              # Auto-generate name if not mapped
-              name=$(echo "$id" | sed 's/-\(.\)/\U\1/g' | sed 's/^\(.\)/\u\1/')
+          # Build matrix with devices and their profiles
+          matrix_entries=()
+          for device_dir in configs/*/; do
+            if [ -d "$device_dir" ]; then
+              device=$(basename "$device_dir")
+              echo "Found device: $device"
+              
+              # Find all profiles for this device
+              for config in "$device_dir"/*.config; do
+                if [ -f "$config" ]; then
+                  profile_id=$(basename "$config" .config)
+                  if [[ -n "${name_map[$profile_id]}" ]]; then
+                    profile_name="${name_map[$profile_id]}"
+                  else
+                    profile_name=$(echo "$profile_id" | sed 's/-\(.\)/\U\1/g' | sed 's/^\(.\)/\u\1/')
+                  fi
+                  
+                  matrix_entries+=("{\"device\":\"$device\",\"profile\":{\"id\":\"$profile_id\",\"name\":\"$profile_name\"}}")
+                fi
+              done
             fi
-            echo "{\"id\":\"$id\",\"name\":\"$name\"}"
-          done | jq -s '.')
+          done
+          
+          # Combine into JSON array
+          matrix=$(printf '%s\n' "${matrix_entries[@]}" | jq -s '.')
           
           # Compress to single line for GITHUB_OUTPUT
-          profiles_oneline=$(echo "$profiles" | jq -c '.')
-          echo "Profiles discovered: $profiles_oneline"
-          echo "profiles=$profiles_oneline" >> $GITHUB_OUTPUT
+          matrix_oneline=$(echo "$matrix" | jq -c '.')
+          echo "Build matrix: $matrix_oneline"
+          echo "matrix=$matrix_oneline" >> $GITHUB_OUTPUT
 
   build:
     needs: discover-profiles
@@ -66,9 +81,9 @@ jobs:
             name: "24.10"
           - branch: openwrt-23.05
             name: "23.05"
-        profile: ${{ fromJson(needs.discover-profiles.outputs.profiles) }}
+        device_profile: ${{ fromJson(needs.discover-profiles.outputs.matrix) }}
 
-    name: Hiker RT5350 - ${{ matrix.profile.name }} (OpenWrt ${{ matrix.openwrt_version.name }})
+    name: ${{ matrix.device_profile.device }} - ${{ matrix.device_profile.profile.name }} (OpenWrt ${{ matrix.openwrt_version.name }})
     
     steps:
       - name: Checkout custom-devices feed
@@ -140,20 +155,20 @@ jobs:
         working-directory: ./openwrt
         run: |
           # Copy defconfig from feed
-          cp feeds/custom/configs/hiker-rt5350/${{ matrix.profile.id }}.config .config
-          echo "✓ Config loaded: ${{ matrix.profile.id }}"
+          cp feeds/custom/configs/${{ matrix.device_profile.device }}/${{ matrix.device_profile.profile.id }}.config .config
+          echo "✓ Config loaded: ${{ matrix.device_profile.device }}/${{ matrix.device_profile.profile.id }}"
           
           # Apply config
           make defconfig
           
           # Copy profile-specific files overlay AFTER defconfig
-          SRC_DIR="$GITHUB_WORKSPACE/custom-devices/files/hiker-rt5350/${{ matrix.profile.id }}"
+          SRC_DIR="$GITHUB_WORKSPACE/custom-devices/files/${{ matrix.device_profile.device }}/${{ matrix.device_profile.profile.id }}"
           if [ -d "$SRC_DIR" ]; then
             echo "Copying files from: $SRC_DIR"
             ls -la "$SRC_DIR" || echo "Cannot list source directory"
             # Copy with . to preserve directory structure
             cp -r "$SRC_DIR"/. files/
-            echo "✓ Files overlay applied: ${{ matrix.profile.id }}"
+            echo "✓ Files overlay applied: ${{ matrix.device_profile.device }}/${{ matrix.device_profile.profile.id }}"
             
             # Update version-specific files if needed
             if [ -f "files/etc/openwrt_release" ]; then
@@ -254,7 +269,7 @@ jobs:
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
           
           # Rename firmware
-          FIRMWARE_NAME="hiker-rt5350-${{ env.OPENWRT_VERSION }}-${{ matrix.profile.id }}"
+          FIRMWARE_NAME="${{ matrix.device_profile.device }}-${{ env.OPENWRT_VERSION }}-${{ matrix.device_profile.profile.id }}"
           echo "FIRMWARE_NAME=$FIRMWARE_NAME" >> $GITHUB_ENV
           
           # Find and rename sysupgrade image
