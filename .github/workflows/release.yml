@@ -222,7 +222,7 @@ jobs:
           FIRMWARE="${{ matrix.device }}-${OPENWRT_VER}-${{ matrix.profile }}"
           SYSUPGRADE=$(ls *sysupgrade.bin 2>/dev/null | head -1)
           if [ -n "$SYSUPGRADE" ]; then
-            cp "$SYSUPGRADE" "${FIRMWARE}.bin"
+          cp "$SYSUPGRADE" "${FIRMWARE}.bin"
             sha256sum "${FIRMWARE}.bin" | awk '{print $1 "  " $2}' > "${FIRMWARE}.bin.sha256"
             
             SIZE=$(ls -lh "${FIRMWARE}.bin" | awk '{print $5}')

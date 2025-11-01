@@ -10,7 +10,8 @@ if [ -z "$1" ]; then
     echo "  2 or slow2      - Slow blink (2s interval)"
     echo "  0.5 or fast     - Fast blink (0.5s interval)"
     echo "  0.1 or veryfast - Very fast blink (0.1s interval)"
-    echo "  alternate       - Red/Blue alternate (1s interval)"
+    echo "  alternate       - Blue on/off, Red on/off (0.15s interval)"
+    echo "  alternate-slow  - Blue on/off, Red on/off (0.5s interval)"
     echo "  both-on         - Both LEDs on"
     echo "  both-off        - Both LEDs off"
     exit 1
@@ -88,14 +89,37 @@ case "$PATTERN" in
         done
         ;;
     alternate)
-        echo "Pattern: Alternate (1s interval) - Red/Blue alternate"
+        echo "Pattern: Alternate (0.5s on, instant switch) - Blue on/off, Red on/off"
         while true; do
-            set_red 1
-            set_blue 0
-            sleep 1
-            set_red 0
+            # Blue: on
             set_blue 1
+            set_red 0
+            sleep 0.5
+            # Blue: off
+            set_blue 0
+            # Red: on (instant switch, no delay)
+            set_red 1
+            sleep 0.5
+            # Red: off
+            set_red 0
+            # Blue: on (instant switch, no delay)
+        done
+        ;;
+    alternate-slow)
+        echo "Pattern: Alternate (1s on, instant switch) - Blue on/off, Red on/off"
+        while true; do
+            # Blue: on
+            set_blue 1
+            set_red 0
             sleep 1
+            # Blue: off
+            set_blue 0
+            # Red: on (instant switch, no delay)
+            set_red 1
+            sleep 1
+            # Red: off
+            set_red 0
+            # Blue: on (instant switch, no delay)
         done
         ;;
     both-on)
