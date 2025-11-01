@@ -1,7 +1,7 @@
 #!/bin/sh
 # Hiker Print - Reset Button Handler with LED feedback
-# 按住2秒：开始红蓝交替闪，松开红蓝长亮5秒，重启
-# 按住超过5秒：开始红蓝同时闪，松开红蓝长亮5秒，恢复出厂设置
+# 按住2秒：开始红蓝交替闪，松开红蓝长亮2秒，重启
+# 按住超过5秒：开始红蓝同时闪，松开红蓝长亮2秒，恢复出厂设置
 
 . /lib/functions.sh
 
@@ -134,7 +134,7 @@ case "${ACTION}" in
 	released)
 		# Button released - stop LED and execute action
 		stop_led_script
-		sleep 0.1  # Wait for LED to turn off
+		# Wait for LED to turn off (no sleep - busybox doesn't support decimals)
 		
 		logger "$BUTTON pressed for $SEEN seconds"
 		
@@ -146,18 +146,18 @@ case "${ACTION}" in
 			exit 0
 		elif [ "$SEEN" -ge 2 ] && [ "$SEEN" -lt 5 ]
 		then
-			# 2-5秒: 红蓝长亮5秒，然后重启
+			# 2-5秒: 红蓝长亮2秒，然后重启
 			echo "REBOOT (${SEEN}s pressed)" > /dev/console
 			turn_on_leds
-			sleep 5
+			sleep 2
 			sync
 			reboot
 		elif [ "$SEEN" -ge 5 ]
 		then
-			# >=5秒: 红蓝长亮5秒，然后恢复出厂设置
+			# >=5秒: 红蓝长亮2秒，然后恢复出厂设置
 			echo "FACTORY RESET (${SEEN}s pressed)" > /dev/console
 			turn_on_leds
-			sleep 5
+			sleep 2
 			jffs2reset -y && reboot &
 		fi
 		;;
