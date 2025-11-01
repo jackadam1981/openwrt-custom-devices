@@ -1,0 +1,33 @@
+#!/bin/sh
+# Hiker Print - Reset Button Handler
+# 2秒: LED慢闪提示重启，松开即重启
+# 5秒: LED快闪提示恢复出厂，松开即执行重置
+
+. /lib/functions.sh
+
+case "${ACTION}" in
+	pressed)
+		# Button pressed - start monitoring timer
+		exit 0
+		;;
+	released)
+		# Button released - execute action
+		logger "$BUTTON pressed for $SEEN seconds"
+		
+		if [ "$SEEN" -ge 2 ] && [ "$SEEN" -lt 5 ]
+		then
+			# 2-5秒: 重启
+			echo "REBOOT (${SEEN}s pressed)" > /dev/console
+			sync
+			reboot
+		elif [ "$SEEN" -ge 5 ]
+		then
+			# >=5秒: 恢复出厂设置
+			echo "FACTORY RESET (${SEEN}s pressed)" > /dev/console
+			jffs2reset -y && reboot &
+		fi
+		;;
+esac
+
+return 0
+
