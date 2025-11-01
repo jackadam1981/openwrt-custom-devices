@@ -155,6 +155,15 @@ jobs:
             cp -r "$SRC_DIR"/. files/
             echo "✓ Files overlay applied: ${{ matrix.profile.id }}"
             
+            # Update version-specific files if needed
+            if [ -f "files/etc/openwrt_release" ]; then
+              # Update DISTRIB_RELEASE with current OpenWrt version
+              sed -i "s/DISTRIB_RELEASE='.*'/DISTRIB_RELEASE='${OPENWRT_VERSION}'/" files/etc/openwrt_release
+              # Update DISTRIB_DESCRIPTION
+              sed -i "s/OpenWrt [0-9.]* /OpenWrt ${OPENWRT_VERSION} /" files/etc/openwrt_release
+              echo "✓ Updated files/etc/openwrt_release for version ${OPENWRT_VERSION}"
+            fi
+            
             # Debug: Print key files to verify overlay
             echo ""
             echo "========================================="
