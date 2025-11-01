@@ -91,7 +91,8 @@ jobs:
           if [ -d "$SRC_DIR" ]; then
             echo "Copying files from: $SRC_DIR"
             ls -la "$SRC_DIR" || echo "Cannot list source directory"
-            cp -r "$SRC_DIR/"* files/
+            # Copy contents preserving directory structure
+            cp -r "$SRC_DIR"/* files/ 2>&1 || echo "Copy failed with code: $?"
             echo "✓ Files overlay applied: ${{ matrix.profile }}"
           else
             echo "✓ No custom files overlay for ${{ matrix.profile }}"
@@ -103,7 +104,7 @@ jobs:
           # Re-copy profile-specific files overlay AFTER defconfig
           if [ -d "$SRC_DIR" ]; then
             echo "Re-copying files from: $SRC_DIR (after defconfig)"
-            cp -r "$SRC_DIR/"* files/
+            cp -r "$SRC_DIR"/* files/ 2>&1 || echo "Copy failed with code: $?"
             echo "✓ Files overlay re-applied: ${{ matrix.profile }}"
             
             # Debug: Print key files to verify overlay
