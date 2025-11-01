@@ -68,6 +68,7 @@ read -r REPLY
 
 case "$REPLY" in
     [Yy]*)
+        echo ""
         ssh \
             -o "StrictHostKeyChecking=no" \
             -o "UserKnownHostsFile=/dev/null" \
@@ -82,8 +83,45 @@ case "$REPLY" in
         echo "======================================"
         echo ""
         echo "设备正在重启..."
-        echo "约 1-2 分钟后访问: http://192.168.1.1/"
         echo ""
+        
+        # Wait for device reboot and test connectivity
+        echo "等待设备启动..."
+        START_TIME=$(date +%s)
+        MAX_WAIT=600  # Maximum wait time (10 minutes) in seconds
+        INTERVAL=2    # Check interval in seconds
+        
+        while true; do
+            CURRENT_TIME=$(date +%s)
+            ELAPSED=$((CURRENT_TIME - START_TIME))
+            
+            # Try to ping the device
+            if ping -c 1 -W 1 192.168.100.1 >/dev/null 2>&1; then
+                printf "\r"
+                echo "✓ 设备已上线!"
+                echo ""
+                echo "======================================"
+                echo "首次启动时间: ${ELAPSED} 秒"
+                echo "======================================"
+                echo ""
+                echo "设备访问地址: http://192.168.100.1/"
+                echo ""
+                break
+            fi
+            
+            # Check timeout
+            if [ $ELAPSED -ge $MAX_WAIT ]; then
+                printf "\r"
+                echo "⚠️  超时：设备在 $(($MAX_WAIT / 60)) 分钟内未响应"
+                echo "请手动检查设备状态"
+                echo ""
+                break
+            fi
+            
+            # Show progress
+            printf "\r等待中... (%d 秒) " "$ELAPSED"
+            sleep $INTERVAL
+        done
         ;;
     *)
         echo "已取消"
