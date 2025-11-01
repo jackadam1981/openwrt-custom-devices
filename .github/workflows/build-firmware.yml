@@ -62,6 +62,8 @@ jobs:
         openwrt_version:
           - branch: main
             name: SNAPSHOT
+          - branch: openwrt-24.10
+            name: "24.10"
           - branch: openwrt-23.05
             name: "23.05"
         profile: ${{ fromJson(needs.discover-profiles.outputs.profiles) }}

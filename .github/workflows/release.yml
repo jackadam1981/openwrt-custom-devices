@@ -17,6 +17,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        openwrt_version:
+          - branch: main
+            name: SNAPSHOT
+          - branch: openwrt-24.10
+            name: "24.10"
+          - branch: openwrt-23.05
+            name: "23.05"
         device:
           - hiker-rt5350
         profile:
@@ -24,6 +31,8 @@ jobs:
           - p910nd
           - wifi-client
           - full-wifi
+
+    name: ${{ matrix.device }} - ${{ matrix.profile }} (OpenWrt ${{ matrix.openwrt_version.name }})
 
     steps:
       - name: Checkout custom-devices feed
@@ -48,11 +57,25 @@ jobs:
             qemu-utils squashfs-tools
           sudo timedatectl set-timezone Asia/Shanghai
 
-      - name: Clone OpenWrt
+      - name: Clone OpenWrt (${{ matrix.openwrt_version.name }})
         run: |
-          git clone --depth 1 https://github.com/openwrt/openwrt.git
+          git clone --depth 1 https://github.com/openwrt/openwrt.git -b ${{ matrix.openwrt_version.branch }} openwrt
           cd openwrt
           echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
+      
+      - name: Get OpenWrt version info
+        working-directory: ./openwrt
+        run: |
+          # Simply use the matrix name as version
+          if [ "${{ matrix.openwrt_version.branch }}" = "main" ]; then
+            OPENWRT_VER="SNAPSHOT"
+          else
+            # Extract version from branch name (e.g., openwrt-23.05 -> 23.05)
+            OPENWRT_VER=$(echo "${{ matrix.openwrt_version.branch }}" | sed 's/^openwrt-//')
+          fi
+          
+          echo "OPENWRT_VERSION=$OPENWRT_VER" >> $GITHUB_ENV
+          echo "OpenWrt version: $OPENWRT_VER"
 
       - name: Update & Install feeds
         working-directory: ./openwrt
