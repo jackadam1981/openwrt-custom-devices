@@ -86,16 +86,25 @@ jobs:
           cp feeds/custom/configs/${{ matrix.device }}/${{ matrix.profile }}.config .config
           echo "✓ Config loaded: ${{ matrix.profile }}"
           
-          # Apply config first (defconfig may clean files directory)
-          make defconfig
-          
-          # Copy profile-specific files overlay AFTER defconfig
+          # Copy profile-specific files overlay BEFORE defconfig
           SRC_DIR="$GITHUB_WORKSPACE/custom-devices/files/${{ matrix.device }}/${{ matrix.profile }}"
           if [ -d "$SRC_DIR" ]; then
             echo "Copying files from: $SRC_DIR"
             ls -la "$SRC_DIR" || echo "Cannot list source directory"
-            cp -rv "$SRC_DIR"/* files/ || echo "Copy failed!"
+            cp -r "$SRC_DIR/"* files/
             echo "✓ Files overlay applied: ${{ matrix.profile }}"
+          else
+            echo "✓ No custom files overlay for ${{ matrix.profile }}"
+          fi
+          
+          # Apply config (defconfig may clean files directory, but files will be copied back)
+          make defconfig
+          
+          # Re-copy profile-specific files overlay AFTER defconfig
+          if [ -d "$SRC_DIR" ]; then
+            echo "Re-copying files from: $SRC_DIR (after defconfig)"
+            cp -r "$SRC_DIR/"* files/
+            echo "✓ Files overlay re-applied: ${{ matrix.profile }}"
             
             # Debug: Print key files to verify overlay
             echo ""

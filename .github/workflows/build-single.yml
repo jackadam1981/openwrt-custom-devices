@@ -125,17 +125,26 @@ jobs:
           cp feeds/custom/configs/${{ inputs.device }}/${{ inputs.profile }}.config .config
           echo "✓ Config loaded: ${{ inputs.profile }}"
           
-          # Apply config first (defconfig may clean files directory)
-          make defconfig
-          echo "✓ Config applied"
-          
-          # Copy profile-specific files overlay AFTER defconfig
+          # Copy profile-specific files overlay BEFORE defconfig
           SRC_DIR="$GITHUB_WORKSPACE/custom-devices/files/${{ inputs.device }}/${{ inputs.profile }}"
           if [ -d "$SRC_DIR" ]; then
             echo "Copying files from: $SRC_DIR"
             ls -la "$SRC_DIR" || echo "Cannot list source directory"
-            cp -rv "$SRC_DIR"/* files/ || echo "Copy failed!"
+            cp -r "$SRC_DIR/"* files/
             echo "✓ Files overlay applied: ${{ inputs.profile }}"
+          else
+            echo "✓ No custom files overlay for ${{ inputs.profile }}"
+          fi
+          
+          # Apply config (defconfig may clean files directory, but files will be copied back)
+          make defconfig
+          echo "✓ Config applied"
+          
+          # Re-copy profile-specific files overlay AFTER defconfig
+          if [ -d "$SRC_DIR" ]; then
+            echo "Re-copying files from: $SRC_DIR (after defconfig)"
+            cp -r "$SRC_DIR/"* files/
+            echo "✓ Files overlay re-applied: ${{ inputs.profile }}"
             
             # Debug: Print key files to verify overlay
             echo ""
