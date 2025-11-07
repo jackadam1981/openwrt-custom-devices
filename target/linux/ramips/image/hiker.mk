@@ -19,7 +19,7 @@ endef
 TARGET_DEVICES += hiker_x9-minimal
 
 # Profile 2: P910ND (打印服务器) ⭐ 推荐
-define Device/hiker_hiker-p910nd
+define Device/hiker_x9-p910nd
   $(call Device/hiker_hiker-common)
   DEVICE_MODEL := Hiker X9 Print
   SUPPORTED_DEVICES := hiker,x9-print hiker,x9 HIKER
@@ -28,7 +28,7 @@ define Device/hiker_hiker-p910nd
     p910nd luci-app-p910nd luci-i18n-p910nd-zh-cn \
     kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-printer
 endef
-TARGET_DEVICES += hiker_hiker-p910nd
+TARGET_DEVICES += hiker_x9-p910nd
 
 # Profile 3: Full WiFi (打印+完整WiFi)
 define Device/hiker_x9-full
