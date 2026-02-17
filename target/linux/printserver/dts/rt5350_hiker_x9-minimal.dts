@@ -9,4 +9,3 @@
 	compatible = "hiker,x9-minimal", "hiker,x9", "ralink,rt5350-soc";
 	model = "Hiker X9 Minimal";
 };
-
