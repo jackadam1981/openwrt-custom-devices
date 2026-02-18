@@ -1,5 +1,5 @@
-# Print server subtarget hikerx9: Hiker X9 device images (RT5350)
-# Device definitions inlined; no dependency on ramips/image/hiker.mk.
+# Hiker RT5350 Device Profiles
+# Include this file in target/linux/ramips/image/rt305x.mk
 
 # Common configuration for all Hiker profiles
 define Device/hiker_hiker-common
